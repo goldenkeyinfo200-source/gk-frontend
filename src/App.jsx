@@ -13,6 +13,74 @@ const req = async (method, path, body, token) => {
 
 const Ctx = createContext(null);
 
+function useAuth() {
+  return useContext(Ctx);
+}
+
+function AuthProvider({ children }) {
+  const [token, setToken] = useState(() => localStorage.getItem('gk_token') || '');
+  const [agent, setAgent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const init = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const me = await req('GET', '/api/auth/me', null, token);
+        setAgent(me.agent || me);
+      } catch (e) {
+        localStorage.removeItem('gk_token');
+        setToken('');
+        setAgent(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    init();
+  }, []);
+
+  const login = async (loginValue, password) => {
+    const d = await req('POST', '/api/auth/login', {
+      login: loginValue,
+      password
+    });
+
+    const newToken = d.token;
+    if (!newToken) throw new Error('Token kelmadi');
+
+    localStorage.setItem('gk_token', newToken);
+    setToken(newToken);
+    setAgent(d.agent || d.user || null);
+
+    if (!d.agent && !d.user) {
+      try {
+        const me = await req('GET', '/api/auth/me', null, newToken);
+        setAgent(me.agent || me);
+      } catch (e) {
+        // Login token saved, but profile endpoint may not exist yet.
+      }
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('gk_token');
+    setToken('');
+    setAgent(null);
+  };
+
+  return (
+    <Ctx.Provider value={{ token, agent, loading, login, logout }}>
+      {children}
+    </Ctx.Provider>
+  );
+}
+
+
 function Login() {
   const { login } = useAuth();
 
