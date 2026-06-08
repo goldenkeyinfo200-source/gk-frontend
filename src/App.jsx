@@ -953,32 +953,98 @@ function AppInner() {
   const { agent, token, loading } = useAuth();
   const [tab, setTab] = useState('clients');
 
-  if (loading) return <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color:'#999' }}>Юкланмоқда...</div>;
+  if (loading) {
+    return (
+      <div style={{
+        height:'100vh',
+        display:'flex',
+        alignItems:'center',
+        justifyContent:'center',
+        fontSize:14,
+        color:'#999'
+      }}>
+        Юкланмоқда...
+      </div>
+    );
+  }
+
   if (!agent) return <Login />;
 
   const menu = [
     ['clients','👥','Мижозлар'],
     ['properties','🏠','Объектлар'],
-    ...(agent.role === 'admin' ? [['agents','👤','Агентлар']] : []),
     ['leads','🔄','Лидлар']
   ];
 
   return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', fontFamily:"'Onest', sans-serif" }}>
-      <div style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
+    <div style={{
+      height:'100vh',
+      display:'flex',
+      flexDirection:'column',
+      maxWidth:480,
+      margin:'0 auto',
+      fontFamily:"'Onest', sans-serif"
+    }}>
+      <div style={{
+        flex:1,
+        overflow:'hidden',
+        display:'flex',
+        flexDirection:'column'
+      }}>
         {tab === 'clients' && <Clients />}
+
         {tab === 'properties' && <Properties token={token} />}
-        {tab === 'agents' && <Agents />}
-        {tab === 'leads' && <div style={{ padding:20, textAlign:'center', color:'#999', marginTop:60 }}>🔄 Лидлар</div>}
+
+        {tab === 'leads' && (
+          <div style={{
+            padding:20,
+            textAlign:'center',
+            color:'#999',
+            marginTop:60
+          }}>
+            🔄 Лидлар
+          </div>
+        )}
       </div>
-      <div style={{ display:'flex', borderTop:'1px solid #e8e8e8', background:'#fff' }}>
-        {menu.map(([k,icon,label]) => (
-          <button key={k} onClick={() => setTab(k)} style={{ flex:1, padding:'8px 4px 6px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:3, fontSize:9, fontWeight:500, cursor:'pointer', color:tab===k?'#2AABEE':'#aaa' }}>
-            <span style={{ fontSize:20 }}>{icon}</span>{label}
+
+      <div style={{
+        display:'flex',
+        borderTop:'1px solid #e8e8e8',
+        background:'#fff'
+      }}>
+        {menu.map(([k, icon, label]) => (
+          <button
+            key={k}
+            onClick={() => setTab(k)}
+            style={{
+              flex:1,
+              padding:'8px 4px 6px',
+              border:'none',
+              background:'none',
+              display:'flex',
+              flexDirection:'column',
+              alignItems:'center',
+              gap:3,
+              fontSize:9,
+              fontWeight:500,
+              cursor:'pointer',
+              color:tab === k ? '#2AABEE' : '#aaa'
+            }}
+          >
+            <span style={{ fontSize:20 }}>{icon}</span>
+            {label}
           </button>
         ))}
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
   );
 }
 
