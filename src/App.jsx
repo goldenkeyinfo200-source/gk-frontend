@@ -489,20 +489,236 @@ function Properties({ token }) {
   );
 }
 
+
+function AddAgent({ onClose, onSave }) {
+  const { token } = useAuth();
+  const [f, setF] = useState({
+    full_name: '',
+    phone: '',
+    login: '',
+    password: '',
+    company_id: '',
+    role: 'agent'
+  });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+  const fv = k => v => setF(p => ({ ...p, [k]: v }));
+
+  const save = async () => {
+    if (!f.full_name || !f.phone || !f.login || !f.password) {
+      return setErr('Исм, телефон, login ва parol мажбурий');
+    }
+
+    setLoading(true);
+    setErr('');
+
+    try {
+      await req('POST', '/api/auth/register', {
+        full_name: f.full_name,
+        phone: f.phone,
+        login: f.login,
+        password: f.password,
+        role: f.role || 'agent',
+        company_id: f.company_id || null
+      }, token);
+
+      onSave();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', zIndex:200, display:'flex', flexDirection:'column', justifyContent:'flex-end' }}>
+      <div style={{ background:'#fff', borderRadius:'20px 20px 0 0', padding:20, maxHeight:'92vh', overflow:'auto' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:16, fontWeight:600 }}>Янги агент</div>
+            <div style={{ fontSize:12, color:'#888', marginTop:3 }}>14 кунлик бепул муддат автомат берилади</div>
+          </div>
+          <button onClick={onClose} style={{ background:'#f5f5f5', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer' }}>✕</button>
+        </div>
+
+        {[
+          ['Агент исми *', 'full_name', 'text', 'Ali Valiyev'],
+          ['Телефон *', 'phone', 'tel', '+998...'],
+          ['Login *', 'login', 'text', 'ali'],
+          ['Парол *', 'password', 'text', '123456'],
+          ['Компания ID', 'company_id', 'text', 'Бўш қолса ҳам бўлади']
+        ].map(([l, k, t, ph]) => (
+          <div key={k} style={{ marginBottom:10 }}>
+            <div style={{ fontSize:12, color:'#666', marginBottom:4 }}>{l}</div>
+            <input
+              type={t}
+              value={f[k]}
+              onChange={e => fv(k)(e.target.value)}
+              placeholder={ph}
+              style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e0e0e0', borderRadius:10, fontSize:14, outline:'none' }}
+            />
+          </div>
+        ))}
+
+        <div style={{ marginBottom:12 }}>
+          <div style={{ fontSize:12, color:'#666', marginBottom:4 }}>Роль</div>
+          <select
+            value={f.role}
+            onChange={e => fv('role')(e.target.value)}
+            style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e0e0e0', borderRadius:10, fontSize:14 }}
+          >
+            <option value="agent">Агент</option>
+            <option value="admin">Админ</option>
+          </select>
+        </div>
+
+        {err && <div style={{ color:'#E24B4A', fontSize:13, marginBottom:10, padding:'8px 12px', background:'#FEE', borderRadius:8 }}>{err}</div>}
+
+        <button onClick={save} disabled={loading} style={{ width:'100%', padding:13, background:'#0F6E56', color:'#fff', border:'none', borderRadius:10, fontSize:15, fontWeight:500, cursor:'pointer' }}>
+          {loading ? '⏳ Сақланмоқда...' : '✅ Агентни рўйхатдан ўтказиш'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AgentCard({ a }) {
+  const status = a.subscription_status || 'trial';
+  const trialEnd = a.trial_end ? new Date(a.trial_end).toLocaleDateString('ru-RU') : '—';
+  const paidUntil = a.paid_until ? new Date(a.paid_until).toLocaleDateString('ru-RU') : '—';
+
+  const statusText = {
+    trial: '14 кунлик бепул',
+    active: 'Тўланган',
+    expired: 'Тўлов керак'
+  }[status] || status;
+
+  const statusColor = {
+    trial: '#534AB7',
+    active: '#0F6E56',
+    expired: '#E24B4A'
+  }[status] || '#888';
+
+  return (
+    <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:14, marginBottom:8 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', gap:10, marginBottom:8 }}>
+        <div>
+          <div style={{ fontWeight:600, fontSize:14 }}>{a.full_name || '—'}</div>
+          <div style={{ fontSize:11, color:'#999', marginTop:2 }}>{a.display_id || '—'} · @{a.login}</div>
+        </div>
+        <div style={{ textAlign:'right' }}>
+          <div style={{ fontSize:11, color:statusColor, fontWeight:700 }}>{statusText}</div>
+          <div style={{ fontSize:10, color:'#999', marginTop:2 }}>{a.role || 'agent'}</div>
+        </div>
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+        <div style={{ background:'#f7f7f7', borderRadius:10, padding:8 }}>
+          <div style={{ fontSize:10, color:'#888' }}>Телефон</div>
+          <div style={{ fontSize:12, fontWeight:500 }}>{a.phone || '—'}</div>
+        </div>
+        <div style={{ background:'#f7f7f7', borderRadius:10, padding:8 }}>
+          <div style={{ fontSize:10, color:'#888' }}>Тўлов коди</div>
+          <div style={{ fontSize:12, fontWeight:500 }}>{a.payment_code || '—'}</div>
+        </div>
+        <div style={{ background:'#f7f7f7', borderRadius:10, padding:8 }}>
+          <div style={{ fontSize:10, color:'#888' }}>Trial тугайди</div>
+          <div style={{ fontSize:12, fontWeight:500 }}>{trialEnd}</div>
+        </div>
+        <div style={{ background:'#f7f7f7', borderRadius:10, padding:8 }}>
+          <div style={{ fontSize:10, color:'#888' }}>Тўланган муддат</div>
+          <div style={{ fontSize:12, fontWeight:500 }}>{paidUntil}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Agents() {
+  const { token, agent } = useAuth();
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [err, setErr] = useState('');
+
+  useEffect(() => { load(); }, []);
+
+  const load = async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const data = await req('GET', '/api/auth/agents', null, token);
+      setAgents(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setErr(e.message || 'Агентлар рўйхатини юклаб бўлмади');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (agent?.role !== 'admin') {
+    return (
+      <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', padding:20, textAlign:'center', color:'#999' }}>
+        Бу бўлим фақат админ учун.
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ height:'100%', display:'flex', flexDirection:'column' }}>
+      <div style={{ background:'#0F6E56', padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div>
+          <div style={{ fontSize:15, fontWeight:600, color:'#fff' }}>Агентлар</div>
+          <div style={{ fontSize:11, color:'rgba(255,255,255,.8)' }}>{agents.length} та</div>
+        </div>
+        <button onClick={() => setShowAdd(true)} style={{ background:'rgba(255,255,255,.2)', border:'none', borderRadius:8, width:32, height:32, color:'#fff', fontSize:20, cursor:'pointer' }}>+</button>
+      </div>
+
+      <div style={{ flex:1, overflow:'auto', padding:12 }}>
+        {err && (
+          <div style={{ color:'#E24B4A', fontSize:13, marginBottom:10, padding:'10px 12px', background:'#FEE', borderRadius:10 }}>
+            {err}
+            <div style={{ marginTop:6, color:'#777' }}>
+              Backend'да GET /api/auth/agents route қўшилганини текширинг.
+            </div>
+          </div>
+        )}
+
+        {loading ? <div style={{ textAlign:'center', padding:40, color:'#999' }}>Юкланмоқда...</div> :
+         agents.length === 0 ? <div style={{ textAlign:'center', padding:40, color:'#999' }}>👤 Агентлар йўқ</div> :
+         agents.map(a => <AgentCard key={a.id} a={a} />)}
+      </div>
+
+      {showAdd && <AddAgent onClose={() => setShowAdd(false)} onSave={() => { setShowAdd(false); load(); }} />}
+    </div>
+  );
+}
+
+
 function AppInner() {
   const { agent, token, loading } = useAuth();
   const [tab, setTab] = useState('clients');
+
   if (loading) return <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, color:'#999' }}>Юкланмоқда...</div>;
   if (!agent) return <Login />;
+
+  const menu = [
+    ['clients','👥','Мижозлар'],
+    ['properties','🏠','Объектлар'],
+    ...(agent.role === 'admin' ? [['agents','👤','Агентлар']] : []),
+    ['leads','🔄','Лидлар']
+  ];
+
   return (
     <div style={{ height:'100vh', display:'flex', flexDirection:'column', maxWidth:480, margin:'0 auto', fontFamily:"'Onest', sans-serif" }}>
       <div style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
         {tab === 'clients' && <Clients />}
         {tab === 'properties' && <Properties token={token} />}
+        {tab === 'agents' && <Agents />}
         {tab === 'leads' && <div style={{ padding:20, textAlign:'center', color:'#999', marginTop:60 }}>🔄 Лидлар</div>}
       </div>
       <div style={{ display:'flex', borderTop:'1px solid #e8e8e8', background:'#fff' }}>
-        {[['clients','👥','Мижозлар'],['properties','🏠','Объектлар'],['leads','🔄','Лидлар']].map(([k,icon,label]) => (
+        {menu.map(([k,icon,label]) => (
           <button key={k} onClick={() => setTab(k)} style={{ flex:1, padding:'8px 4px 6px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:3, fontSize:9, fontWeight:500, cursor:'pointer', color:tab===k?'#2AABEE':'#aaa' }}>
             <span style={{ fontSize:20 }}>{icon}</span>{label}
           </button>
