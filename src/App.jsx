@@ -13,53 +13,239 @@ const req = async (method, path, body, token) => {
 
 const Ctx = createContext(null);
 
-function AuthProvider({ children }) {
-  const [agent, setAgent] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('tk'));
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    if (token) req('GET', '/api/auth/me', null, token).then(setAgent).catch(() => { setToken(null); localStorage.removeItem('tk'); }).finally(() => setLoading(false));
-    else setLoading(false);
-  }, [token]);
-  const login = async (lg, pw) => {
-    const d = await req('POST', '/api/auth/login', { login: lg, password: pw });
-    localStorage.setItem('tk', d.token); setToken(d.token); setAgent(d.agent); return d;
-  };
-  return <Ctx.Provider value={{ agent, token, loading, login }}>{children}</Ctx.Provider>;
-}
-
-const useAuth = () => useContext(Ctx);
-
 function Login() {
   const { login } = useAuth();
-  const [f, setF] = useState({ login: '', password: '' });
+
+  const [mode, setMode] = useState('login'); // login | register
+  const [f, setF] = useState({
+    login: '',
+    password: '',
+    full_name: '',
+    phone: '',
+    company_name: ''
+  });
+
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
-  const go = async () => {
+  const [ok, setOk] = useState('');
+
+  const fv = k => v => setF(p => ({ ...p, [k]: v }));
+
+  const goLogin = async () => {
     if (!f.login || !f.password) return setErr('Login va parol kiriting');
-    setLoading(true); setErr('');
-    try { await login(f.login, f.password); } catch(e) { setErr(e.message); } finally { setLoading(false); }
+
+    setLoading(true);
+    setErr('');
+    setOk('');
+
+    try {
+      await login(f.login, f.password);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const goRegister = async () => {
+    if (!f.full_name || !f.phone || !f.login || !f.password) {
+      return setErr('Исм, телефон, login ва parol мажбурий');
+    }
+
+    setLoading(true);
+    setErr('');
+    setOk('');
+
+    try {
+      await req('POST', '/api/auth/register-public', {
+        full_name: f.full_name,
+        phone: f.phone,
+        company_name: f.company_name,
+        login: f.login,
+        password: f.password
+      });
+
+      setOk('Муваффақиятли рўйхатдан ўтдингиз. 14 кунлик бепул муддат берилди. Энди киришингиз мумкин.');
+      setMode('login');
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:24, background:'linear-gradient(135deg,#1a8bc4,#534AB7)' }}>
-      <div style={{ width:'100%', maxWidth:360 }}>
-        <div style={{ textAlign:'center', marginBottom:32 }}>
+    <div style={{
+      minHeight:'100vh',
+      display:'flex',
+      alignItems:'center',
+      justifyContent:'center',
+      padding:24,
+      background:'linear-gradient(135deg,#1a8bc4,#534AB7)'
+    }}>
+      <div style={{ width:'100%', maxWidth:380 }}>
+        <div style={{ textAlign:'center', marginBottom:28 }}>
           <div style={{ fontSize:48 }}>🏠</div>
-          <div style={{ fontSize:24, fontWeight:700, color:'#fff', marginTop:8 }}>GK Network</div>
-          <div style={{ fontSize:14, color:'rgba(255,255,255,.7)', marginTop:4 }}>Риэлторлар платформаси</div>
+          <div style={{ fontSize:24, fontWeight:700, color:'#fff', marginTop:8 }}>
+            GK Network
+          </div>
+          <div style={{ fontSize:14, color:'rgba(255,255,255,.75)', marginTop:4 }}>
+            Риэлторлар платформаси
+          </div>
         </div>
+
         <div style={{ background:'#fff', borderRadius:20, padding:24 }}>
-          {[['Login','text','login'],['Парол','password','password']].map(([l,t,k]) => (
+          <div style={{
+            display:'flex',
+            background:'#f2f4f7',
+            borderRadius:12,
+            padding:4,
+            marginBottom:16
+          }}>
+            <button
+              onClick={() => { setMode('login'); setErr(''); setOk(''); }}
+              style={{
+                flex:1,
+                padding:10,
+                border:'none',
+                borderRadius:9,
+                background:mode==='login' ? '#2AABEE' : 'transparent',
+                color:mode==='login' ? '#fff' : '#666',
+                fontWeight:600,
+                cursor:'pointer'
+              }}
+            >
+              Кириш
+            </button>
+
+            <button
+              onClick={() => { setMode('register'); setErr(''); setOk(''); }}
+              style={{
+                flex:1,
+                padding:10,
+                border:'none',
+                borderRadius:9,
+                background:mode==='register' ? '#2AABEE' : 'transparent',
+                color:mode==='register' ? '#fff' : '#666',
+                fontWeight:600,
+                cursor:'pointer'
+              }}
+            >
+              Рўйхатдан ўтиш
+            </button>
+          </div>
+
+          {mode === 'register' && (
+            <>
+              {[
+                ['Агент исми *','full_name','text','Ali Valiyev'],
+                ['Телефон *','phone','tel','+998901234567'],
+                ['Компания','company_name','text','Golden Key']
+              ].map(([l,k,t,ph]) => (
+                <div key={k} style={{ marginBottom:12 }}>
+                  <div style={{ fontSize:12, color:'#666', marginBottom:5 }}>{l}</div>
+                  <input
+                    type={t}
+                    value={f[k]}
+                    onChange={e => fv(k)(e.target.value)}
+                    placeholder={ph}
+                    style={{
+                      width:'100%',
+                      padding:'11px 14px',
+                      fontSize:14,
+                      border:'1.5px solid #e0e0e0',
+                      borderRadius:10,
+                      outline:'none'
+                    }}
+                  />
+                </div>
+              ))}
+            </>
+          )}
+
+          {[
+            ['Login *','login','text','login'],
+            ['Парол *','password','password','parol']
+          ].map(([l,k,t,ph]) => (
             <div key={k} style={{ marginBottom:12 }}>
               <div style={{ fontSize:12, color:'#666', marginBottom:5 }}>{l}</div>
-              <input type={t} value={f[k]} onChange={e => setF(p => ({ ...p, [k]: e.target.value }))} onKeyDown={e => e.key==='Enter' && go()}
-                style={{ width:'100%', padding:'11px 14px', fontSize:14, border:'1.5px solid #e0e0e0', borderRadius:10, outline:'none' }} />
+              <input
+                type={t}
+                value={f[k]}
+                onChange={e => fv(k)(e.target.value)}
+                placeholder={ph}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    mode === 'login' ? goLogin() : goRegister();
+                  }
+                }}
+                style={{
+                  width:'100%',
+                  padding:'11px 14px',
+                  fontSize:14,
+                  border:'1.5px solid #e0e0e0',
+                  borderRadius:10,
+                  outline:'none'
+                }}
+              />
             </div>
           ))}
-          {err && <div style={{ color:'#E24B4A', fontSize:13, marginBottom:12, padding:'8px 12px', background:'#FEE', borderRadius:8 }}>{err}</div>}
-          <button onClick={go} disabled={loading} style={{ width:'100%', padding:13, background:'#2AABEE', color:'#fff', border:'none', borderRadius:10, fontSize:15, fontWeight:500, cursor:'pointer' }}>
-            {loading ? '...' : 'Кириш'}
+
+          {err && (
+            <div style={{
+              color:'#E24B4A',
+              fontSize:13,
+              marginBottom:12,
+              padding:'9px 12px',
+              background:'#FEE',
+              borderRadius:8
+            }}>
+              {err}
+            </div>
+          )}
+
+          {ok && (
+            <div style={{
+              color:'#0F6E56',
+              fontSize:13,
+              marginBottom:12,
+              padding:'9px 12px',
+              background:'#EFFFF8',
+              borderRadius:8
+            }}>
+              {ok}
+            </div>
+          )}
+
+          <button
+            onClick={mode === 'login' ? goLogin : goRegister}
+            disabled={loading}
+            style={{
+              width:'100%',
+              padding:13,
+              background:'#2AABEE',
+              color:'#fff',
+              border:'none',
+              borderRadius:10,
+              fontSize:15,
+              fontWeight:600,
+              cursor:'pointer'
+            }}
+          >
+            {loading ? '...' : mode === 'login' ? 'Кириш' : 'Рўйхатдан ўтиш'}
           </button>
+
+          {mode === 'register' && (
+            <div style={{
+              fontSize:12,
+              color:'#777',
+              textAlign:'center',
+              marginTop:12,
+              lineHeight:1.5
+            }}>
+              Рўйхатдан ўтгандан кейин 14 кунлик бепул муддат автомат берилади.
+            </div>
+          )}
         </div>
       </div>
     </div>
