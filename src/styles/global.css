@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Onest', system-ui, sans-serif;
+    background: #f8f5f5;
+    color: #1a1a1a;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #f8f5f5; }
+  ::-webkit-scrollbar-thumb { background: #ffcdd2; border-radius: 2px; }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-2xl border border-cherry-100 shadow-card;
+  }
+  .btn-primary {
+    @apply bg-cherry-700 hover:bg-cherry-800 text-white font-medium rounded-xl
+           px-4 py-2.5 text-sm transition-all active:scale-95 flex items-center gap-2;
+  }
+  .btn-outline {
+    @apply bg-white hover:bg-cherry-50 text-cherry-700 font-medium rounded-xl
+           px-4 py-2.5 text-sm border border-cherry-200 transition-all active:scale-95 flex items-center gap-2;
+  }
+  .btn-ghost {
+    @apply text-gray-500 hover:text-cherry-700 hover:bg-cherry-50 rounded-xl
+           px-3 py-2 text-sm transition-all flex items-center gap-2;
+  }
+  .input {
+    @apply w-full bg-white border border-cherry-100 rounded-xl px-3.5 py-2.5
+           text-sm text-gray-900 placeholder:text-gray-400
+           focus:outline-none focus:border-cherry-400 focus:ring-2 focus:ring-cherry-100
+           transition-all;
+  }
+  .badge-active   { @apply bg-green-50 text-green-700 text-xs font-medium px-2 py-0.5 rounded-md; }
+  .badge-wait     { @apply bg-amber-50 text-amber-700 text-xs font-medium px-2 py-0.5 rounded-md; }
+  .badge-inactive { @apply bg-gray-100 text-gray-500 text-xs font-medium px-2 py-0.5 rounded-md; }
+  .badge-cherry   { @apply bg-cherry-50 text-cherry-700 text-xs font-medium px-2 py-0.5 rounded-md; }
+  .badge-gold     { @apply bg-amber-50 text-amber-700 text-xs font-medium px-2 py-0.5 rounded-md; }
+  .section-title  { @apply text-xs font-medium text-gray-400 uppercase tracking-wider mb-3; }
+}
+
+@layer utilities {
+  .text-cherry { color: #c62828; }
+  .scrollbar-hide { scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+}
