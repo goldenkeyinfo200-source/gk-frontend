@@ -1,6 +1,11 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: '/api' })
+const API_URL =
+  import.meta.env.VITE_API_URL || 'https://gk-network-production.up.railway.app'
+
+const api = axios.create({
+  baseURL: API_URL,
+})
 
 api.interceptors.request.use(cfg => {
   const token = localStorage.getItem('gk_token')
@@ -22,37 +27,33 @@ api.interceptors.response.use(
 
 export default api
 
-// ─── Auth ───────────────────────────────────────────────
 export const authApi = {
-  login: (data) => api.post('/auth/login', data),
-  me:    ()     => api.get('/auth/me'),
-  registerPublic: (data) => api.post('/auth/register-public', data),
+  login: (data) => api.post('/api/auth/login', data),
+  me: () => api.get('/api/auth/me'),
+  registerPublic: (data) => api.post('/api/auth/register-public', data),
 }
 
-// ─── Clients ────────────────────────────────────────────
 export const clientsApi = {
-  list:    (params) => api.get('/clients', { params }),
-  get:     (id)     => api.get(`/clients/${id}`),
-  create:  (data)   => api.post('/clients', data),
-  update:  (id, data) => api.put(`/clients/${id}`, data),
-  delete:  (id)     => api.delete(`/clients/${id}`),
-  matches: (id)     => api.get(`/clients/${id}/matches`),
+  list: (params) => api.get('/api/clients', { params }),
+  get: (id) => api.get(`/api/clients/${id}`),
+  create: (data) => api.post('/api/clients', data),
+  update: (id, data) => api.put(`/api/clients/${id}`, data),
+  delete: (id) => api.delete(`/api/clients/${id}`),
+  matches: (id) => api.get(`/api/clients/${id}/matches`),
 }
 
-// ─── Properties ─────────────────────────────────────────
 export const propertiesApi = {
-  list:    (params) => api.get('/properties', { params }),
-  get:     (id)     => api.get(`/properties/${id}`),
-  create:  (data)   => api.post('/properties', data, {
+  list: (params) => api.get('/api/properties', { params }),
+  get: (id) => api.get(`/api/properties/${id}`),
+  create: (data) => api.post('/api/properties', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  update:  (id, data) => api.put(`/properties/${id}`, data),
-  matches: (id)     => api.get(`/properties/${id}/matches`),
+  update: (id, data) => api.put(`/api/properties/${id}`, data),
+  matches: (id) => api.get(`/api/properties/${id}/matches`),
 }
 
-// ─── Leads ──────────────────────────────────────────────
 export const leadsApi = {
-  list:    (params) => api.get('/leads', { params }),
-  send:    (data)   => api.post('/leads', data),
-  respond: (id, action) => api.put(`/leads/${id}/respond`, { action }),
+  list: (params) => api.get('/api/leads', { params }),
+  send: (data) => api.post('/api/leads', data),
+  respond: (id, action) => api.put(`/api/leads/${id}/respond`, { action }),
 }
