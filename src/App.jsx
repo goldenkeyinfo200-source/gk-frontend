@@ -9,11 +9,19 @@ import ClientDetail from './pages/clients/ClientDetail'
 import Properties from './pages/properties/Properties'
 import PropertyDetail from './pages/properties/PropertyDetail'
 import Leads from './pages/leads/Leads'
+import AdminPanel from './pages/admin/AdminPanel'
 import './styles/global.css'
 
 function PrivateRoute({ children }) {
   const { token } = useAuthStore()
   return token ? children : <Navigate to="/login" replace />
+}
+
+function AdminRoute({ children }) {
+  const { token, agent } = useAuthStore()
+  if (!token) return <Navigate to="/login" replace />
+  if (agent?.role !== 'admin') return <Navigate to="/" replace />
+  return children
 }
 
 function PublicRoute({ children }) {
@@ -44,11 +52,14 @@ export default function App() {
           <PrivateRoute><Layout /></PrivateRoute>
         }>
           <Route index element={<Dashboard />} />
-          <Route path="clients" element={<Clients />} />
-          <Route path="clients/:id" element={<ClientDetail />} />
-          <Route path="properties" element={<Properties />} />
-          <Route path="properties/:id" element={<PropertyDetail />} />
-          <Route path="leads" element={<Leads />} />
+          <Route path="clients"         element={<Clients />} />
+          <Route path="clients/:id"     element={<ClientDetail />} />
+          <Route path="properties"      element={<Properties />} />
+          <Route path="properties/:id"  element={<PropertyDetail />} />
+          <Route path="leads"           element={<Leads />} />
+          <Route path="admin"           element={
+            <AdminRoute><AdminPanel /></AdminRoute>
+          } />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
