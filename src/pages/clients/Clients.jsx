@@ -1,55 +1,108 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Plus, Search, Users, Phone, Target, Edit3, X } from 'lucide-react'
-import { clientsApi } from '../../services/api'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { Plus, Search, Users, Phone, Target, Edit3, X, Heart, ArrowLeft } from 'lucide-react'
+import { clientsApi, leadsApi } from '../../services/api'
 import { Btn, Empty, Spinner, Badge, Modal, Input, Select, Textarea, Toggle } from '../../components/ui'
-import { fmt, TYPE_UZ, NEED_UZ, CITIES, ROOMS } from '../../utils/helpers'
+import { fmt, TYPE_UZ, NEED_UZ, ROOMS } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 const STATUS_TABS = [
-  { key: '',         label: 'Barchasi' },
-  { key: 'active',   label: 'Faol'     },
-  { key: 'archived', label: 'Arxiv'    },
+  { key: '', label: 'Barchasi' },
+  { key: 'active', label: 'Faol' },
+  { key: 'archived', label: 'Arxiv' },
 ]
 
 export default function Clients() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const selectedProperty = searchParams.get('property')
+
   const [clients, setClients] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch]   = useState('')
-  const [status, setStatus]   = useState('')
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState(selectedProperty ? 'active' : '')
   const [addOpen, setAddOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [sendingClientId, setSendingClientId] = useState(null)
 
   const load = async () => {
     setLoading(true)
     try {
       const { data } = await clientsApi.list({ search, status })
       setClients(data)
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Mijozlarni yuklashda xato')
     } finally {
       setLoading(false)
     }
   }
 
-  useEffect(() => { load() }, [search, status])
+  useEffect(() => {
+    load()
+  }, [search, status])
+
+  const handleSendLead = async (clientId) => {
+    if (!selectedProperty) return
+
+    setSendingClientId(clientId)
+
+    try {
+      await leadsApi.send({
+        property_id: selectedProperty,
+        client_id: clientId,
+        notes: ''
+      })
+
+      toast.success('Lead yuborildi!')
+      navigate('/leads')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Lead yuborishda xato')
+    } finally {
+      setSendingClientId(null)
+    }
+  }
 
   return (
     <div className="space-y-4 max-w-4xl">
-      {/* Header */}
+
+      {selectedProperty && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-xl bg-white border border-green-200 text-green-700"
+            >
+              <ArrowLeft size={16} />
+            </button>
+
+            <div className="flex-1">
+              <p className="font-semibold text-green-800">
+                ❤️ Obyekt uchun mijoz tanlang
+              </p>
+              <p className="text-xs text-green-600 mt-0.5">
+                Tanlangan mijoz bo‘yicha obyekt egasi agentiga lead yuboriladi.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Mijozlar</h1>
           <p className="text-sm text-gray-500 mt-0.5">{clients.length} ta mijoz</p>
         </div>
+
         <Btn onClick={() => setAddOpen(true)}>
           <Plus size={16} /> Yangi mijoz
         </Btn>
       </div>
 
-      {/* Search & filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+
           <input
             type="text"
             placeholder="Ism, telefon yoki ID qidirish..."
@@ -57,12 +110,17 @@ export default function Clients() {
             onChange={e => setSearch(e.target.value)}
             className="w-full bg-white border border-cherry-100 rounded-xl pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:border-cherry-400 focus:ring-2 focus:ring-cherry-100 transition-all"
           />
+
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
               <X size={14} />
             </button>
           )}
         </div>
+
         <div className="flex gap-1 bg-white border border-cherry-100 rounded-xl p-1 self-start">
           {STATUS_TABS.map(t => (
             <button
@@ -70,7 +128,9 @@ export default function Clients() {
               onClick={() => setStatus(t.key)}
               className={clsx(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                status === t.key ? 'bg-cherry-700 text-white' : 'text-gray-500 hover:text-cherry-700'
+                status === t.key
+                  ? 'bg-cherry-700 text-white'
+                  : 'text-gray-500 hover:text-cherry-700'
               )}
             >
               {t.label}
@@ -79,9 +139,10 @@ export default function Clients() {
         </div>
       </div>
 
-      {/* List */}
       {loading ? (
-        <div className="flex justify-center py-16"><Spinner /></div>
+        <div className="flex justify-center py-16">
+          <Spinner />
+        </div>
       ) : clients.length === 0 ? (
         <Empty
           icon={Users}
@@ -93,41 +154,68 @@ export default function Clients() {
         <div className="grid gap-3">
           {clients.map(c => (
             <div key={c.id} className="card p-4 hover:shadow-card-hover transition-all group relative">
-              {/* Tahrirlash tugmasi */}
-              <button
-                onClick={e => { e.preventDefault(); setEditItem(c) }}
-                className="absolute top-3 right-3 bg-cherry-50 hover:bg-cherry-100 text-cherry-600 rounded-xl p-1.5 transition-all opacity-0 group-hover:opacity-100"
-              >
-                <Edit3 size={13} />
-              </button>
-              <Link to={`/clients/${c.id}`} className="block">
+
+              {!selectedProperty && (
+                <button
+                  onClick={e => {
+                    e.preventDefault()
+                    setEditItem(c)
+                  }}
+                  className="absolute top-3 right-3 bg-cherry-50 hover:bg-cherry-100 text-cherry-600 rounded-xl p-1.5 transition-all opacity-0 group-hover:opacity-100"
+                >
+                  <Edit3 size={13} />
+                </button>
+              )}
+
+              <Link to={selectedProperty ? '#' : `/clients/${c.id}`} className="block">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-cherry-100 flex items-center justify-center text-sm font-semibold text-cherry-700 flex-shrink-0">
                     {c.full_name?.[0] || 'M'}
                   </div>
+
                   <div className="flex-1 min-w-0 pr-8">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-gray-900 text-sm">{c.full_name || '—'}</span>
-                      <span className="text-xs text-gray-400">{c.display_id}</span>
+                      <span className="font-semibold text-gray-900 text-sm">
+                        {c.full_name || '—'}
+                      </span>
+
+                      <span className="text-xs text-gray-400">
+                        {c.display_id}
+                      </span>
+
                       <Badge color={c.status === 'active' ? 'green' : 'gray'}>
                         {c.status === 'active' ? 'Faol' : 'Arxiv'}
                       </Badge>
                     </div>
+
                     <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                       <span className="text-xs text-gray-500 flex items-center gap-1">
                         <Phone size={11} /> {c.phone || '—'}
                       </span>
+
                       <span className="text-xs text-gray-500">
                         {NEED_UZ[c.need_type]} · {TYPE_UZ[c.property_type]}
                       </span>
-                      {c.rooms && <span className="text-xs text-gray-500">{c.rooms} xona</span>}
-                      <span className="text-xs font-medium text-cherry-700">{fmt(c.budget_max)}</span>
+
+                      {c.rooms && (
+                        <span className="text-xs text-gray-500">
+                          {c.rooms} xona
+                        </span>
+                      )}
+
+                      <span className="text-xs font-medium text-cherry-700">
+                        {fmt(c.budget_max)}
+                      </span>
                     </div>
+
                     {c.district && (
-                      <p className="text-xs text-gray-400 mt-1">📍 {c.district}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        📍 {c.district}
+                      </p>
                     )}
                   </div>
-                  {c.matched_count > 0 && (
+
+                  {c.matched_count > 0 && !selectedProperty && (
                     <div className="flex-shrink-0">
                       <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-lg">
                         <Target size={12} />
@@ -137,73 +225,117 @@ export default function Clients() {
                   )}
                 </div>
               </Link>
+
+              {selectedProperty && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <Btn
+                    size="sm"
+                    className="w-full"
+                    loading={sendingClientId === c.id}
+                    onClick={() => handleSendLead(c.id)}
+                  >
+                    <Heart size={14} /> Shu mijozni yuborish
+                  </Btn>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Add modal */}
       <ClientFormModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        onSaved={() => { setAddOpen(false); load() }}
+        onSaved={() => {
+          setAddOpen(false)
+          load()
+        }}
       />
 
-      {/* Edit modal */}
       <ClientFormModal
         open={!!editItem}
         client={editItem}
         onClose={() => setEditItem(null)}
-        onSaved={() => { setEditItem(null); load() }}
+        onSaved={() => {
+          setEditItem(null)
+          load()
+        }}
       />
     </div>
   )
 }
 
-// ─── Client Form Modal (Qo'shish + Tahrirlash) ───────────
 function ClientFormModal({ open, client, onClose, onSaved }) {
   const isEdit = !!client
 
   const [form, setForm] = useState({
-    full_name: '', phone: '', need_type: 'buy', property_type: 'apartment',
-    rooms: '', budget_min: '', budget_max: '', district: '', notes: '',
-    mortgage: false, installment: false, status: 'active',
+    full_name: '',
+    phone: '',
+    need_type: 'buy',
+    property_type: 'apartment',
+    rooms: '',
+    budget_min: '',
+    budget_max: '',
+    district: '',
+    notes: '',
+    mortgage: false,
+    installment: false,
+    status: 'active',
   })
+
   const [loading, setLoading] = useState(false)
+
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
-  // Tahrirlash: mavjud ma'lumotlarni to'ldirish
   useEffect(() => {
     if (client) {
       setForm({
-        full_name:     client.full_name     || '',
-        phone:         client.phone         || '',
-        need_type:     client.need_type     || 'buy',
+        full_name: client.full_name || '',
+        phone: client.phone || '',
+        need_type: client.need_type || 'buy',
         property_type: client.property_type || 'apartment',
-        rooms:         client.rooms         || '',
-        budget_min:    client.budget_min    || '',
-        budget_max:    client.budget_max    || '',
-        district:      client.district      || client.region || '',
-        notes:         client.notes         || '',
-        mortgage:      client.mortgage      || false,
-        installment:   client.installment   || false,
-        status:        client.status        || 'active',
+        rooms: client.rooms || '',
+        budget_min: client.budget_min || '',
+        budget_max: client.budget_max || '',
+        district: client.district || client.region || '',
+        notes: client.notes || '',
+        mortgage: client.mortgage || false,
+        installment: client.installment || false,
+        status: client.status || 'active',
       })
     } else {
       setForm({
-        full_name: '', phone: '', need_type: 'buy', property_type: 'apartment',
-        rooms: '', budget_min: '', budget_max: '', district: '', notes: '',
-        mortgage: false, installment: false, status: 'active',
+        full_name: '',
+        phone: '',
+        need_type: 'buy',
+        property_type: 'apartment',
+        rooms: '',
+        budget_min: '',
+        budget_max: '',
+        district: '',
+        notes: '',
+        mortgage: false,
+        installment: false,
+        status: 'active',
       })
     }
   }, [client, open])
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.need_type || !form.property_type) return toast.error("Kerakli maydonlarni to'ldiring")
+
+    if (!form.need_type || !form.property_type) {
+      return toast.error("Kerakli maydonlarni to'ldiring")
+    }
+
     setLoading(true)
+
     try {
-      const payload = { ...form, region: form.district } // district → region ham yuboriladi
+      const payload = {
+        ...form,
+        region: form.district,
+      }
+
       if (isEdit) {
         await clientsApi.update(client.id, payload)
         toast.success('Mijoz yangilandi!')
@@ -211,6 +343,7 @@ function ClientFormModal({ open, client, onClose, onSaved }) {
         await clientsApi.create(payload)
         toast.success("Mijoz qo'shildi!")
       }
+
       onSaved()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Xato')
@@ -220,8 +353,14 @@ function ClientFormModal({ open, client, onClose, onSaved }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Mijozni tahrirlash' : 'Yangi mijoz'} size="md">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={isEdit ? 'Mijozni tahrirlash' : 'Yangi mijoz'}
+      size="md"
+    >
       <form onSubmit={submit} className="space-y-4">
+
         <div className="grid grid-cols-2 gap-3">
           <Input
             label="To'liq ism"
@@ -229,6 +368,7 @@ function ClientFormModal({ open, client, onClose, onSaved }) {
             onChange={e => set('full_name', e.target.value)}
             placeholder="Sardor Rahimov"
           />
+
           <Input
             label="Telefon"
             type="tel"
@@ -239,11 +379,20 @@ function ClientFormModal({ open, client, onClose, onSaved }) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Select label="Maqsadi" value={form.need_type} onChange={e => set('need_type', e.target.value)}>
+          <Select
+            label="Maqsadi"
+            value={form.need_type}
+            onChange={e => set('need_type', e.target.value)}
+          >
             <option value="buy">Sotib oladi</option>
             <option value="rent">Ijaraga oladi</option>
           </Select>
-          <Select label="Mulk turi" value={form.property_type} onChange={e => set('property_type', e.target.value)}>
+
+          <Select
+            label="Mulk turi"
+            value={form.property_type}
+            onChange={e => set('property_type', e.target.value)}
+          >
             <option value="apartment">Kvartira</option>
             <option value="house">Uy / Hovli</option>
             <option value="office">Ofis</option>
@@ -252,10 +401,17 @@ function ClientFormModal({ open, client, onClose, onSaved }) {
         </div>
 
         <div className="grid grid-cols-3 gap-3">
-          <Select label="Xonalar" value={form.rooms} onChange={e => set('rooms', e.target.value)}>
+          <Select
+            label="Xonalar"
+            value={form.rooms}
+            onChange={e => set('rooms', e.target.value)}
+          >
             <option value="">Farq qilmaydi</option>
-            {ROOMS.map(r => <option key={r} value={r}>{r}</option>)}
+            {ROOMS.map(r => (
+              <option key={r} value={r}>{r}</option>
+            ))}
           </Select>
+
           <Input
             label="Min $"
             type="number"
@@ -263,6 +419,7 @@ function ClientFormModal({ open, client, onClose, onSaved }) {
             onChange={e => set('budget_min', e.target.value)}
             placeholder="0"
           />
+
           <Input
             label="Max $"
             type="number"
@@ -272,7 +429,6 @@ function ClientFormModal({ open, client, onClose, onSaved }) {
           />
         </div>
 
-        {/* Viloyat o'rniga shahar/tuman */}
         <Input
           label="Shahar / Tuman"
           value={form.district}
@@ -281,15 +437,28 @@ function ClientFormModal({ open, client, onClose, onSaved }) {
         />
 
         {isEdit && (
-          <Select label="Holat" value={form.status} onChange={e => set('status', e.target.value)}>
+          <Select
+            label="Holat"
+            value={form.status}
+            onChange={e => set('status', e.target.value)}
+          >
             <option value="active">Faol</option>
-            <option value="archived">Arxivlash (yopildi)</option>
+            <option value="archived">Arxivlash</option>
           </Select>
         )}
 
         <div className="flex gap-6">
-          <Toggle checked={form.mortgage} onChange={e => set('mortgage', e.target.checked)} label="Ipoteka" />
-          <Toggle checked={form.installment} onChange={e => set('installment', e.target.checked)} label="Muddatli to'lov" />
+          <Toggle
+            checked={form.mortgage}
+            onChange={e => set('mortgage', e.target.checked)}
+            label="Ipoteka"
+          />
+
+          <Toggle
+            checked={form.installment}
+            onChange={e => set('installment', e.target.checked)}
+            label="Muddatli to'lov"
+          />
         </div>
 
         <Textarea
@@ -300,9 +469,27 @@ function ClientFormModal({ open, client, onClose, onSaved }) {
         />
 
         <div className="flex gap-2 pt-1">
-          <Btn type="button" variant="outline" onClick={onClose} className="flex-1">Bekor qilish</Btn>
-          <Btn type="submit" loading={loading} className="flex-1">
-            {isEdit ? <><Edit3 size={14} /> Saqlash</> : 'Qo\'shish'}
+          <Btn
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="flex-1"
+          >
+            Bekor qilish
+          </Btn>
+
+          <Btn
+            type="submit"
+            loading={loading}
+            className="flex-1"
+          >
+            {isEdit ? (
+              <>
+                <Edit3 size={14} /> Saqlash
+              </>
+            ) : (
+              "Qo'shish"
+            )}
           </Btn>
         </div>
       </form>
