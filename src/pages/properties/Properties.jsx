@@ -1,17 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search, Building2, MapPin, Users, Send, Filter } from 'lucide-react'
+import { Plus, Search, Building2, MapPin, Users, Send, Edit3, X } from 'lucide-react'
 import { propertiesApi } from '../../services/api'
 import { Btn, Empty, Spinner, Badge, Modal, Input, Select, Textarea, Toggle } from '../../components/ui'
-import { fmt, TYPE_UZ, PURPOSE_UZ, REGIONS, ROOMS } from '../../utils/helpers'
+import { fmt, TYPE_UZ, PURPOSE_UZ, CITIES, ROOMS } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-
-const STATUS_TABS = [
-  { key: '',       label: 'Barchasi' },
-  { key: 'active', label: 'Faol'     },
-  { key: 'mine',   label: 'Meniki'   },
-]
 
 export default function Properties() {
   const [props, setProps]     = useState([])
@@ -20,6 +14,7 @@ export default function Properties() {
   const [mine, setMine]       = useState(false)
   const [purpose, setPurpose] = useState('')
   const [addOpen, setAddOpen] = useState(false)
+  const [editItem, setEditItem] = useState(null)
 
   const load = async () => {
     setLoading(true)
@@ -34,7 +29,8 @@ export default function Properties() {
   useEffect(() => { load() }, [mine, purpose])
 
   const filtered = props.filter(p =>
-    !search || [p.display_id, p.region, p.district, p.address].some(v => v?.toLowerCase().includes(search.toLowerCase()))
+    !search || [p.display_id, p.district, p.street, p.display_address]
+      .some(v => v?.toLowerCase().includes(search.toLowerCase()))
   )
 
   return (
@@ -48,35 +44,42 @@ export default function Properties() {
         <Btn onClick={() => setAddOpen(true)}><Plus size={16} /> Yangi ob'yekt</Btn>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-48">
+      {/* Search & filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
           <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Qidirish..."
+            placeholder="Shahar, tuman yoki ko'cha bo'yicha qidirish..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-white border border-cherry-100 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-cherry-400 focus:ring-2 focus:ring-cherry-100"
+            className="w-full bg-white border border-cherry-100 rounded-xl pl-9 pr-9 py-2.5 text-sm focus:outline-none focus:border-cherry-400 focus:ring-2 focus:ring-cherry-100"
           />
-        </div>
-        <div className="flex gap-1 bg-white border border-cherry-100 rounded-xl p-1">
-          {[
-            { val: '',     label: 'Hammasi' },
-            { val: 'sell', label: 'Sotuv'   },
-            { val: 'rent', label: 'Ijara'   },
-          ].map(t => (
-            <button key={t.val} onClick={() => setPurpose(t.val)}
-              className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                purpose === t.val ? 'bg-cherry-700 text-white' : 'text-gray-500 hover:text-cherry-700')}>
-              {t.label}
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X size={14} />
             </button>
-          ))}
+          )}
         </div>
-        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-          <input type="checkbox" checked={mine} onChange={e => setMine(e.target.checked)} className="accent-cherry-700 w-4 h-4" />
-          Faqat menikiler
-        </label>
+        <div className="flex gap-2">
+          <div className="flex gap-1 bg-white border border-cherry-100 rounded-xl p-1">
+            {[
+              { val: '',     label: 'Hammasi' },
+              { val: 'sell', label: 'Sotuv'   },
+              { val: 'rent', label: 'Ijara'   },
+            ].map(t => (
+              <button key={t.val} onClick={() => setPurpose(t.val)}
+                className={clsx('px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                  purpose === t.val ? 'bg-cherry-700 text-white' : 'text-gray-500 hover:text-cherry-700')}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none bg-white border border-cherry-100 rounded-xl px-3">
+            <input type="checkbox" checked={mine} onChange={e => setMine(e.target.checked)} className="accent-cherry-700 w-4 h-4" />
+            Meniki
+          </label>
+        </div>
       </div>
 
       {/* Grid */}
@@ -85,15 +88,24 @@ export default function Properties() {
       ) : filtered.length === 0 ? (
         <Empty
           icon={Building2}
-          title="Ob'yektlar yo'q"
-          desc="Yangi ob'yekt qo'shib boshlang"
-          action={<Btn onClick={() => setAddOpen(true)}><Plus size={15} /> Qo'shish</Btn>}
+          title={search ? "Qidiruv natijasi yo'q" : "Ob'yektlar yo'q"}
+          desc={search ? `"${search}" bo'yicha hech narsa topilmadi` : "Yangi ob'yekt qo'shib boshlang"}
+          action={!search && <Btn onClick={() => setAddOpen(true)}><Plus size={15} /> Qo'shish</Btn>}
         />
       ) : (
         <div className="grid sm:grid-cols-2 gap-3">
           {filtered.map(p => (
-            <Link key={p.id} to={`/properties/${p.id}`}>
-              <div className="card overflow-hidden hover:shadow-card-hover transition-all group">
+            <div key={p.id} className="card overflow-hidden hover:shadow-card-hover transition-all group relative">
+              {/* Tahrirlash tugmasi — faqat o'z ob'yektida */}
+              {p.is_own && (
+                <button
+                  onClick={e => { e.preventDefault(); setEditItem(p) }}
+                  className="absolute top-2 right-2 z-10 bg-white/90 hover:bg-white text-cherry-700 rounded-xl p-1.5 shadow-sm transition-all opacity-0 group-hover:opacity-100"
+                >
+                  <Edit3 size={13} />
+                </button>
+              )}
+              <Link to={`/properties/${p.id}`}>
                 {/* Photo */}
                 <div className="h-36 bg-cherry-50 relative overflow-hidden">
                   {p.photos?.[0]
@@ -109,7 +121,7 @@ export default function Properties() {
                     {!p.is_own && <Badge color="gray">Boshqa agent</Badge>}
                   </div>
                   {p.photos?.length > 1 && (
-                    <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-lg">
+                    <span className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-lg">
                       {p.photos.length} rasm
                     </span>
                   )}
@@ -125,7 +137,8 @@ export default function Properties() {
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
                         <MapPin size={10} className="text-cherry-400" />
-                        {p.display_address || p.region || '—'}
+                        {/* Ko'cha nomi hamma ko'radi, uy raqami yashirin */}
+                        {[p.district, p.street].filter(Boolean).join(', ') || p.display_address || '—'}
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
@@ -146,43 +159,101 @@ export default function Properties() {
                     )}
                   </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           ))}
         </div>
       )}
 
-      <AddPropertyModal
+      {/* Add modal */}
+      <PropertyFormModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onSaved={() => { setAddOpen(false); load() }}
+      />
+
+      {/* Edit modal */}
+      <PropertyFormModal
+        open={!!editItem}
+        property={editItem}
+        onClose={() => setEditItem(null)}
+        onSaved={() => { setEditItem(null); load() }}
       />
     </div>
   )
 }
 
-// ─── Add Property Modal ──────────────────────────────────
-function AddPropertyModal({ open, onClose, onSaved }) {
+// ─── Property Form Modal (Qo'shish + Tahrirlash) ─────────
+function PropertyFormModal({ open, property, onClose, onSaved }) {
+  const isEdit = !!property
+
   const [form, setForm] = useState({
     purpose: 'sell', property_type: 'apartment', rooms: '', area: '',
-    floor: '', total_floors: '', price: '', region: '', district: '',
-    address: '', owner_name: '', owner_phone: '', description: '',
-    mortgage: false, installment: false,
+    floor: '', total_floors: '', price: '', city: '', district: '',
+    street: '', house_number: '', owner_name: '', owner_phone: '',
+    description: '', mortgage: false, installment: false,
   })
-  const [files, setFiles]   = useState([])
+  const [files, setFiles]     = useState([])
   const [loading, setLoading] = useState(false)
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  // Tahrirlash: mavjud ma'lumotlarni to'ldirish
+  useEffect(() => {
+    if (property) {
+      // address ni ko'cha va uy raqamiga ajratish
+      const parts = (property.address || '').split(',').map(s => s.trim())
+      setForm({
+        purpose:       property.purpose       || 'sell',
+        property_type: property.property_type || 'apartment',
+        rooms:         property.rooms         || '',
+        area:          property.area          || '',
+        floor:         property.floor         || '',
+        total_floors:  property.total_floors  || '',
+        price:         property.price         || '',
+        city:          property.region        || '', // region → city
+        district:      property.district      || '',
+        street:        parts[0]               || '',
+        house_number:  parts[1]               || '',
+        owner_name:    property.owner_name    || '',
+        owner_phone:   property.owner_phone   || '',
+        description:   property.description   || '',
+        mortgage:      property.mortgage      || false,
+        installment:   property.installment   || false,
+      })
+    } else {
+      setForm({
+        purpose: 'sell', property_type: 'apartment', rooms: '', area: '',
+        floor: '', total_floors: '', price: '', city: '', district: '',
+        street: '', house_number: '', owner_name: '', owner_phone: '',
+        description: '', mortgage: false, installment: false,
+      })
+      setFiles([])
+    }
+  }, [property, open])
 
   const submit = async (e) => {
     e.preventDefault()
     if (!form.price) return toast.error("Narx kiritish shart")
     setLoading(true)
     try {
-      const fd = new FormData()
-      Object.entries(form).forEach(([k, v]) => fd.append(k, v))
-      files.forEach(f => fd.append('photos', f))
-      await propertiesApi.create(fd)
-      toast.success("Ob'yekt qo'shildi va Telegram ga yuborildi!")
+      // Ko'cha + uy raqami: ko'cha hamma ko'radi, uy raqami yashirin (address ga saqlanadi)
+      const payload = {
+        ...form,
+        region:   form.city,     // city → region (backend uchun)
+        address:  form.street + (form.house_number ? ', ' + form.house_number : ''), // address yashirin
+        landmark: form.street,   // landmark = ko'cha nomi (hamma ko'radi)
+      }
+
+      if (isEdit) {
+        await propertiesApi.update(property.id, payload)
+        toast.success("Ob'yekt yangilandi!")
+      } else {
+        const fd = new FormData()
+        Object.entries(payload).forEach(([k, v]) => fd.append(k, v))
+        files.forEach(f => fd.append('photos', f))
+        await propertiesApi.create(fd)
+        toast.success("Ob'yekt qo'shildi va Telegram ga yuborildi!")
+      }
       onSaved()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Xato')
@@ -192,7 +263,7 @@ function AddPropertyModal({ open, onClose, onSaved }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Yangi ob'yekt" size="lg">
+    <Modal open={open} onClose={onClose} title={isEdit ? "Ob'yektni tahrirlash" : "Yangi ob'yekt"} size="lg">
       <form onSubmit={submit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Select label="Maqsad" value={form.purpose} onChange={e => set('purpose', e.target.value)}>
@@ -206,6 +277,7 @@ function AddPropertyModal({ open, onClose, onSaved }) {
             <option value="land">Yer</option>
           </Select>
         </div>
+
         <div className="grid grid-cols-4 gap-3">
           <Select label="Xonalar" value={form.rooms} onChange={e => set('rooms', e.target.value)}>
             <option value="">—</option>
@@ -215,44 +287,78 @@ function AddPropertyModal({ open, onClose, onSaved }) {
           <Input label="Qavat" type="number" value={form.floor} onChange={e => set('floor', e.target.value)} />
           <Input label="Jami qavat" type="number" value={form.total_floors} onChange={e => set('total_floors', e.target.value)} />
         </div>
+
         <Input label="Narx ($) *" type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="25000" />
-        <div className="grid grid-cols-2 gap-3">
-          <Select label="Viloyat" value={form.region} onChange={e => set('region', e.target.value)}>
-            <option value="">Tanlang</option>
-            {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-          </Select>
-          <Input label="Tuman/ko'cha" value={form.district} onChange={e => set('district', e.target.value)} />
+
+        {/* Manzil bloki */}
+        <div className="bg-cherry-50 rounded-xl p-3 space-y-3">
+          <p className="text-xs font-semibold text-cherry-700 flex items-center gap-1.5">
+            <MapPin size={13} /> Manzil
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Select label="Shahar" value={form.city} onChange={e => set('city', e.target.value)}>
+              <option value="">Tanlang</option>
+              {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </Select>
+            <Input label="Tuman / Mahalla" value={form.district} onChange={e => set('district', e.target.value)} placeholder="Yunusobod tumani" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Input
+                label="Ko'cha nomi (hamma ko'radi)"
+                value={form.street}
+                onChange={e => set('street', e.target.value)}
+                placeholder="Amir Temur ko'chasi"
+              />
+              <p className="text-xs text-green-600 mt-1">✓ E'londa ko'rsatiladi</p>
+            </div>
+            <div>
+              <Input
+                label="Uy raqami (yashirin)"
+                value={form.house_number}
+                onChange={e => set('house_number', e.target.value)}
+                placeholder="12-uy"
+              />
+              <p className="text-xs text-gray-400 mt-1">🔒 Faqat agentga ko'rinadi</p>
+            </div>
+          </div>
         </div>
-        <Input label="Aniq manzil (yashirin)" value={form.address} onChange={e => set('address', e.target.value)} placeholder="Ko'cha, uy raqami..." />
+
         <div className="grid grid-cols-2 gap-3">
           <Input label="Mulkdor ismi" value={form.owner_name} onChange={e => set('owner_name', e.target.value)} />
           <Input label="Mulkdor telefon" value={form.owner_phone} onChange={e => set('owner_phone', e.target.value)} />
         </div>
+
         <div className="flex gap-6">
           <Toggle checked={form.mortgage} onChange={e => set('mortgage', e.target.checked)} label="Ipoteka" />
           <Toggle checked={form.installment} onChange={e => set('installment', e.target.checked)} label="Muddatli to'lov" />
         </div>
+
         <Textarea label="Tavsif" value={form.description} onChange={e => set('description', e.target.value)} />
-        {/* Photo upload */}
-        <div>
-          <label className="text-xs font-medium text-gray-600 mb-1.5 block">Rasmlar (max 10)</label>
-          <input
-            type="file" multiple accept="image/*"
-            onChange={e => setFiles(Array.from(e.target.files))}
-            className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-medium file:bg-cherry-50 file:text-cherry-700 hover:file:bg-cherry-100"
-          />
-          {files.length > 0 && (
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {files.map((f, i) => (
-                <img key={i} src={URL.createObjectURL(f)} className="w-14 h-14 rounded-xl object-cover border border-cherry-100" alt="" />
-              ))}
-            </div>
-          )}
-        </div>
+
+        {/* Rasm yuklash — faqat yangi qo'shishda */}
+        {!isEdit && (
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1.5 block">Rasmlar (max 10)</label>
+            <input
+              type="file" multiple accept="image/*"
+              onChange={e => setFiles(Array.from(e.target.files))}
+              className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-medium file:bg-cherry-50 file:text-cherry-700 hover:file:bg-cherry-100"
+            />
+            {files.length > 0 && (
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {files.map((f, i) => (
+                  <img key={i} src={URL.createObjectURL(f)} className="w-14 h-14 rounded-xl object-cover border border-cherry-100" alt="" />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2 pt-1">
           <Btn type="button" variant="outline" onClick={onClose} className="flex-1">Bekor</Btn>
           <Btn type="submit" loading={loading} className="flex-1">
-            <Send size={14} /> Saqlash va post
+            {isEdit ? <><Edit3 size={14} /> Saqlash</> : <><Send size={14} /> Saqlash va post</>}
           </Btn>
         </div>
       </form>
