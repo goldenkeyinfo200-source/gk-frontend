@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Phone, MapPin, Target, Edit3, CheckCircle,
-  Building2, Sparkles, RefreshCw, Send, Lock, Eye, EyeOff
+  Building2, RefreshCw, Sparkles, Send, Lock
 } from 'lucide-react'
 import { clientsApi, leadsApi } from '../../services/api'
 import useAuthStore from '../../store/authStore'
@@ -15,12 +15,12 @@ export default function ClientDetail() {
   const { id }       = useParams()
   const navigate     = useNavigate()
   const { agent }    = useAuthStore()
-  const [client, setClient]     = useState(null)
-  const [matches, setMatches]   = useState([])
-  const [tab, setTab]           = useState('info')
-  const [loading, setLoading]   = useState(true)
-  const [matchLoad, setMatchLoad] = useState(false)
-  const [editOpen, setEditOpen] = useState(false)
+  const [client, setClient]         = useState(null)
+  const [matches, setMatches]       = useState([])
+  const [tab, setTab]               = useState('info')
+  const [loading, setLoading]       = useState(true)
+  const [matchLoad, setMatchLoad]   = useState(false)
+  const [editOpen, setEditOpen]     = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -56,7 +56,7 @@ export default function ClientDetail() {
   if (loading) return <div className="flex justify-center py-20"><Spinner /></div>
   if (!client)  return <div className="text-center py-20 text-gray-400">Topilmadi</div>
 
-  // O'z mijozimi yoki boshqa agentniki?
+  // O'z mijozimi?
   const isOwn = client.agent_id === agent?.id || agent?.role === 'admin'
 
   return (
@@ -64,11 +64,11 @@ export default function ClientDetail() {
 
       {/* Back + header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-white border border-cherry-100 text-gray-500 transition-all">
+        <button onClick={() => navigate(-1)}
+          className="p-2 rounded-xl hover:bg-white border border-cherry-100 text-gray-500 transition-all">
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1">
-          {/* Boshqa agentning mijozida ism yashirin */}
           <h1 className="text-lg font-bold text-gray-900">
             {isOwn ? (client.full_name || client.display_id) : ('Mijoz ' + client.display_id)}
           </h1>
@@ -99,8 +99,10 @@ export default function ClientDetail() {
           { key: 'matches', label: "Mos ob'yektlar" },
         ].map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className={clsx('flex-1 py-2 rounded-xl text-sm font-medium transition-all',
-              tab === t.key ? 'bg-cherry-700 text-white' : 'text-gray-500 hover:text-cherry-700')}>
+            className={clsx(
+              'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
+              tab === t.key ? 'bg-cherry-700 text-white' : 'text-gray-500 hover:text-cherry-700'
+            )}>
             {t.label}
           </button>
         ))}
@@ -110,10 +112,10 @@ export default function ClientDetail() {
       {tab === 'info' && (
         <div className="card p-5 space-y-1">
 
-          {/* Boshqa agentning mijozi — ogоhlantirish */}
+          {/* Boshqa agentning mijozi — ogohlantirish */}
           {!isOwn && (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-3">
-              <Lock size={14} className="text-amber-600 flex-shrink-0" />
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-3">
+              <Lock size={14} className="text-amber-600 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700">
                 Bu boshqa agentning mijozi. Shaxsiy ma'lumotlar yashirin.
               </p>
@@ -130,10 +132,11 @@ export default function ClientDetail() {
           {client.rooms && <Row label="Xonalar" value={client.rooms + ' ta'} />}
           <Row label="Byudjet"   value={`${fmt(client.budget_min)} — ${fmt(client.budget_max)}`} />
 
-          {/* Telefon — FAQAT o'z mijozida */}
+          {/* Telefon — faqat o'z mijozida */}
           <Row label="Telefon" value={
             isOwn
-              ? <a href={`tel:${client.phone}`} className="text-cherry-700 font-medium hover:underline flex items-center gap-1">
+              ? <a href={`tel:${client.phone}`}
+                  className="text-cherry-700 font-medium hover:underline flex items-center gap-1">
                   <Phone size={13} /> {client.phone || '—'}
                 </a>
               : <span className="flex items-center gap-1 text-gray-400 text-sm">
@@ -141,28 +144,24 @@ export default function ClientDetail() {
                 </span>
           } />
 
-          {/* To'liq ism — FAQAT o'z mijozida */}
-          {isOwn && client.full_name && (
-            <Row label="To'liq ism" value={client.full_name} />
-          )}
-
-          {client.district && (
+          {/* Hudud */}
+          {(client.district || client.region) && (
             <Row label="Hudud" value={
               <span className="flex items-center gap-1">
                 <MapPin size={13} className="text-cherry-500" />
-                {client.district}
+                {client.district || client.region}
               </span>
             } />
           )}
-          {client.mortgage    && <Row label="Ipoteka"   value={<Badge color="blue">✓ Maqbul</Badge>} />}
-          {client.installment && <Row label="Muddatli"  value={<Badge color="purple">✓ Maqbul</Badge>} />}
 
-          {/* Izoh — FAQAT o'z mijozida */}
+          {client.mortgage    && <Row label="Ipoteka"  value={<Badge color="blue">✓ Maqbul</Badge>} />}
+          {client.installment && <Row label="Muddatli" value={<Badge color="purple">✓ Maqbul</Badge>} />}
+
+          {/* Izoh — faqat o'z mijozida */}
           {isOwn && client.notes && (
             <Row label="Izoh" value={<span className="text-gray-600 text-sm">{client.notes}</span>} />
           )}
 
-          {/* Agent nomi */}
           <Row label="Agent" value={
             <span className="text-sm font-medium">
               {isOwn ? 'Siz' : (client.agent_name || '—')}
@@ -174,11 +173,13 @@ export default function ClientDetail() {
       {/* ── MATCHES TAB ── */}
       {tab === 'matches' && (
         <div className="space-y-3">
+          {/* AI header */}
           <div className="bg-cherry-900 rounded-2xl p-4 text-white">
             <div className="flex items-center gap-2 mb-3">
-              <Sparkles size={14} className="text-amber-400" />
+              <Sparkles size={15} className="text-amber-400" />
               <span className="text-sm font-medium">AI mos kelish tahlili</span>
-              <button onClick={loadMatches} className="ml-auto p-1 rounded-lg hover:bg-white/10">
+              <button onClick={loadMatches}
+                className="ml-auto p-1 rounded-lg hover:bg-white/10 transition-all">
                 <RefreshCw size={13} className={matchLoad ? 'animate-spin' : ''} />
               </button>
             </div>
@@ -201,8 +202,11 @@ export default function ClientDetail() {
           {matchLoad ? (
             <div className="flex justify-center py-12"><Spinner /></div>
           ) : matches.length === 0 ? (
-            <Empty icon={Target} title="Mos ob'yekt topilmadi"
-              desc="Ob'yektlar qo'shilganda bu yerda ko'rinadi" />
+            <Empty
+              icon={Target}
+              title="Mos ob'yekt topilmadi"
+              desc="Ob'yektlar qo'shilganda bu yerda ko'rinadi"
+            />
           ) : (
             matches.map((p, i) => (
               <MatchCard key={p.id} property={p} client={client} rank={i + 1} />
@@ -211,7 +215,7 @@ export default function ClientDetail() {
         </div>
       )}
 
-      {/* Edit modal — FAQAT isOwn */}
+      {/* Edit modal — faqat isOwn */}
       {isOwn && (
         <EditClientModal
           open={editOpen}
@@ -224,7 +228,7 @@ export default function ClientDetail() {
   )
 }
 
-// ─── Row ────────────────────────────────────────────────
+// ─── Row ─────────────────────────────────────────────────
 function Row({ label, value }) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-cherry-50 last:border-0">
@@ -234,13 +238,14 @@ function Row({ label, value }) {
   )
 }
 
-// ─── Match Card ─────────────────────────────────────────
+// ─── Match Card ──────────────────────────────────────────
 function MatchCard({ property: p, client, rank }) {
-  const [sent, setSent] = useState(false)
+  const [sent, setSent]         = useState(false)
+  const [sending, setSending]   = useState(false)
 
   const score = Math.min(100, Math.round(
     ((p.price <= (client.budget_max || 1e9) ? 40 : 20) +
-     (!client.rooms || client.rooms === p.rooms ? 25 : 10) +
+     (!client.rooms || String(client.rooms) === String(p.rooms) ? 25 : 10) +
      (p.property_type === client.property_type ? 20 : 0) +
      15)
   ))
@@ -250,8 +255,37 @@ function MatchCard({ property: p, client, rank }) {
     score >= 65 ? 'border-blue-400 bg-blue-50 text-blue-700'   :
                   'border-gray-200 bg-gray-50 text-gray-600'
 
+  // Lid yuborish — receiver_id = ob'yekt egasining agent_id
+  const handleSendLead = async () => {
+    // O'z ob'yektiga lid yuborish shart emas
+    if (p.is_own) {
+      toast('Bu sizning ob\'yektingiz — lid yuborish shart emas', { icon: 'ℹ️' })
+      return
+    }
+
+    if (!p.agent_id) {
+      toast.error("Agent ID topilmadi")
+      return
+    }
+
+    setSending(true)
+    try {
+      await leadsApi.send({
+        client_id:   client.id,
+        receiver_id: p.agent_id,
+        notes: `${client.display_id} mijoz uchun mos ob'yekt: ${p.display_id}. Byudjet: ${fmt(client.budget_max)}`,
+      })
+      setSent(true)
+      toast.success('Lid yuborildi! Agent Telegram orqali xabar oladi. 🎉')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Xato yuz berdi')
+    } finally {
+      setSending(false)
+    }
+  }
+
   return (
-    <div className={clsx('card p-4', rank === 1 && 'border-cherry-400')}>
+    <div className={clsx('card p-4 transition-all', rank === 1 && 'border-cherry-400')}>
       {rank === 1 && (
         <div className="mb-2">
           <span className="text-xs bg-amber-500 text-white font-semibold px-2 py-0.5 rounded-md">
@@ -259,6 +293,7 @@ function MatchCard({ property: p, client, rank }) {
           </span>
         </div>
       )}
+
       <div className="flex items-start gap-3">
         {p.photos?.[0]
           ? <img src={p.photos[0]} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" alt="" />
@@ -280,11 +315,13 @@ function MatchCard({ property: p, client, rank }) {
           <p className="text-base font-bold text-cherry-700 mt-0.5">{fmt(p.price)}</p>
           <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
             <MapPin size={10} className="text-cherry-400" />
-            {/* Ko'cha nomi ko'rinadi, uy raqami yo'q */}
             {p.landmark || p.display_address || p.district || '—'}
           </p>
         </div>
-        <div className={clsx('w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center flex-shrink-0', scoreColor)}>
+        <div className={clsx(
+          'w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center flex-shrink-0',
+          scoreColor
+        )}>
           <span className="text-xs font-bold leading-none">{score}%</span>
           <span className="text-[9px] mt-0.5">mos</span>
         </div>
@@ -293,7 +330,7 @@ function MatchCard({ property: p, client, rank }) {
       {/* Mos parametrlar */}
       <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-cherry-50">
         <Param ok={p.price <= (client.budget_max || 1e9)} label="Narx mos" />
-        <Param ok={!client.rooms || client.rooms === p.rooms} label="Xona soni" />
+        <Param ok={!client.rooms || String(client.rooms) === String(p.rooms)} label="Xona soni" />
         <Param ok={p.property_type === client.property_type} label="Tur mos" />
         {p.mortgage    && <Param ok label="Ipoteka" />}
         {p.installment && <Param ok label="Muddatli" />}
@@ -301,35 +338,44 @@ function MatchCard({ property: p, client, rank }) {
 
       {/* Harakatlar */}
       <div className="flex gap-2 mt-3">
-        {p.is_own ? (
-          /* O'z ob'yekti — mulkdor tel */
-          p.owner_phone ? (
-            <a href={`tel:${p.owner_phone}`} className="flex-1">
-              <Btn variant="primary" size="sm" className="w-full">
-                <Phone size={13} /> Mulkdorga qo'ng'iroq
-              </Btn>
-            </a>
-          ) : null
-        ) : (
-          /* Boshqa agentniki — agentga bog'lanish */
-          p.agent_phone ? (
-            <a href={`tel:${p.agent_phone}`} className="flex-1">
-              <Btn variant="primary" size="sm" className="w-full">
-                <Phone size={13} /> Agentga bog'lanish
-              </Btn>
-            </a>
-          ) : null
+        {/* Bog'lanish tugmasi */}
+        {p.is_own
+          ? p.owner_phone && (
+              <a href={`tel:${p.owner_phone}`} className="flex-1">
+                <Btn variant="primary" size="sm" className="w-full">
+                  <Phone size={13} /> Mulkdorga qo'ng'iroq
+                </Btn>
+              </a>
+            )
+          : p.agent_phone && (
+              <a href={`tel:${p.agent_phone}`} className="flex-1">
+                <Btn variant="primary" size="sm" className="w-full">
+                  <Phone size={13} /> Agentga bog'lanish
+                </Btn>
+              </a>
+            )
+        }
+
+        {/* Lid yuborish — boshqa agentning ob'yektiga */}
+        {!p.is_own && (
+          <Btn
+            variant={sent ? 'ghost' : 'outline'}
+            size="sm"
+            className="flex-1"
+            disabled={sent}
+            loading={sending}
+            onClick={handleSendLead}
+          >
+            <Send size={13} />
+            {sent ? '✓ Lid yuborildi' : 'Lid yuborish'}
+          </Btn>
         )}
-        <Btn variant="outline" size="sm" className="flex-1"
-          disabled={sent}
-          onClick={() => { setSent(true); toast.success('Xabar yuborildi!') }}>
-          <Send size={13} /> {sent ? 'Yuborildi' : 'Xabar'}
-        </Btn>
       </div>
     </div>
   )
 }
 
+// ─── Param dot ───────────────────────────────────────────
 function Param({ ok, label }) {
   return (
     <div className={clsx('flex items-center gap-1.5 text-xs', ok ? 'text-gray-600' : 'text-gray-300')}>
@@ -339,7 +385,7 @@ function Param({ ok, label }) {
   )
 }
 
-// ─── Edit Client Modal ───────────────────────────────────
+// ─── Edit Client Modal ────────────────────────────────────
 function EditClientModal({ open, client, onClose, onSaved }) {
   const [form, setForm]   = useState({})
   const [loading, setLoading] = useState(false)
@@ -380,15 +426,19 @@ function EditClientModal({ open, client, onClose, onSaved }) {
     <Modal open={open} onClose={onClose} title="Mijozni tahrirlash" size="md">
       <form onSubmit={submit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Input label="To'liq ism" value={form.full_name || ''} onChange={e => set('full_name', e.target.value)} />
-          <Input label="Telefon" value={form.phone || ''} onChange={e => set('phone', e.target.value)} />
+          <Input label="To'liq ism" value={form.full_name || ''}
+            onChange={e => set('full_name', e.target.value)} />
+          <Input label="Telefon" type="tel" value={form.phone || ''}
+            onChange={e => set('phone', e.target.value)} />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Select label="Maqsadi" value={form.need_type || 'buy'} onChange={e => set('need_type', e.target.value)}>
+          <Select label="Maqsadi" value={form.need_type || 'buy'}
+            onChange={e => set('need_type', e.target.value)}>
             <option value="buy">Sotib oladi</option>
             <option value="rent">Ijaraga oladi</option>
           </Select>
-          <Select label="Mulk turi" value={form.property_type || 'apartment'} onChange={e => set('property_type', e.target.value)}>
+          <Select label="Mulk turi" value={form.property_type || 'apartment'}
+            onChange={e => set('property_type', e.target.value)}>
             <option value="apartment">Kvartira</option>
             <option value="house">Uy / Hovli</option>
             <option value="office">Ofis</option>
@@ -396,23 +446,33 @@ function EditClientModal({ open, client, onClose, onSaved }) {
           </Select>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <Select label="Xonalar" value={form.rooms || ''} onChange={e => set('rooms', e.target.value)}>
+          <Select label="Xonalar" value={form.rooms || ''}
+            onChange={e => set('rooms', e.target.value)}>
             <option value="">Farq qilmaydi</option>
             {ROOMS.map(r => <option key={r} value={r}>{r}</option>)}
           </Select>
-          <Input label="Min $" type="number" value={form.budget_min || ''} onChange={e => set('budget_min', e.target.value)} />
-          <Input label="Max $" type="number" value={form.budget_max || ''} onChange={e => set('budget_max', e.target.value)} />
+          <Input label="Min $" type="number" value={form.budget_min || ''}
+            onChange={e => set('budget_min', e.target.value)} />
+          <Input label="Max $" type="number" value={form.budget_max || ''}
+            onChange={e => set('budget_max', e.target.value)} />
         </div>
-        <Input label="Shahar / Tuman" value={form.district || ''} onChange={e => set('district', e.target.value)} />
-        <Select label="Holat" value={form.status || 'active'} onChange={e => set('status', e.target.value)}>
+        <Input label="Shahar / Tuman" value={form.district || ''}
+          onChange={e => set('district', e.target.value)}
+          placeholder="Toshkent, Yunusobod tumani" />
+        <Select label="Holat" value={form.status || 'active'}
+          onChange={e => set('status', e.target.value)}>
           <option value="active">Faol</option>
           <option value="archived">Arxivlash (yopildi)</option>
         </Select>
         <div className="flex gap-6">
-          <Toggle checked={!!form.mortgage} onChange={e => set('mortgage', e.target.checked)} label="Ipoteka" />
-          <Toggle checked={!!form.installment} onChange={e => set('installment', e.target.checked)} label="Muddatli to'lov" />
+          <Toggle checked={!!form.mortgage}
+            onChange={e => set('mortgage', e.target.checked)} label="Ipoteka" />
+          <Toggle checked={!!form.installment}
+            onChange={e => set('installment', e.target.checked)} label="Muddatli to'lov" />
         </div>
-        <Textarea label="Izoh" value={form.notes || ''} onChange={e => set('notes', e.target.value)} />
+        <Textarea label="Izoh" value={form.notes || ''}
+          onChange={e => set('notes', e.target.value)}
+          placeholder="Qo'shimcha talablar..." />
         <div className="flex gap-2 pt-1">
           <Btn type="button" variant="outline" onClick={onClose} className="flex-1">Bekor</Btn>
           <Btn type="submit" loading={loading} className="flex-1">Saqlash</Btn>
