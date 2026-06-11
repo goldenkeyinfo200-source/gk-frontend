@@ -357,6 +357,7 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
             <option value="house">Uy / Hovli</option>
             <option value="office">Ofis</option>
             <option value="land">Yer</option>
+            <option value="commercial">Noturar joy</option>
           </Select>
         </div>
 

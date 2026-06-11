@@ -3,6 +3,7 @@ export const TYPE_UZ = {
   house: 'Uy / Hovli',
   office: 'Ofis',
   land: 'Yer',
+  commercial: 'Noturar joy',
 }
 
 export const PURPOSE_UZ = {
