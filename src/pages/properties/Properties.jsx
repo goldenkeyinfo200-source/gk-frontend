@@ -401,7 +401,38 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
             </div>
           </div>
           <Input label="Mo'ljal" value={form.landmark_note || ''} onChange={e => set('landmark_note', e.target.value)} placeholder="Supermarket yonida, 5-avtobus bekati" />
-          <Input label="Lokatsiya (Google Maps link)" value={form.location_url || ''} onChange={e => set('location_url', e.target.value)} placeholder="https://maps.google.com/..." />
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1.5 block">Lokatsiya</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={form.location_url || ''}
+                onChange={e => set('location_url', e.target.value)}
+                placeholder="https://maps.google.com/... yoki koordinatalar"
+                className="flex-1 bg-white border border-cherry-100 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-cherry-400 focus:ring-2 focus:ring-cherry-100 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      pos => {
+                        const url = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`
+                        set('location_url', url)
+                      },
+                      () => toast.error("Lokatsiya ruxsat berilmadi")
+                    )
+                  } else {
+                    toast.error("Brauzer lokatsiyani qo'llab-quvvatlamaydi")
+                  }
+                }}
+                className="px-3 py-2 bg-cherry-50 border border-cherry-100 rounded-xl text-cherry-700 hover:bg-cherry-100 transition-all text-sm"
+                title="Joriy joylashuvni olish"
+              >
+                📍
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Mulkdor */}
