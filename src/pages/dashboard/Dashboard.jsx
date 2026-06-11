@@ -1,27 +1,84 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, Building2, ArrowLeftRight, TrendingUp, CheckCircle, Clock, ChevronRight, Zap } from 'lucide-react'
+import { Users, Building2, ArrowLeftRight, TrendingUp, CheckCircle, Clock, ChevronRight, Zap, ExternalLink } from 'lucide-react'
 import { clientsApi, propertiesApi, leadsApi } from '../../services/api'
+import api from '../../services/api'
 import useAuthStore from '../../store/authStore'
 import { StatCard, Spinner } from '../../components/ui'
 import { fmt, fmtTime, TYPE_UZ, PURPOSE_UZ, STATUS_UZ } from '../../utils/helpers'
+
+function BannerSlider({ banners }) {
+  const [cur, setCur] = useState(0)
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    if (banners.length <= 1) return
+    timerRef.current = setInterval(() => {
+      setCur(c => (c + 1) % banners.length)
+    }, 4000)
+    return () => clearInterval(timerRef.current)
+  }, [banners.length])
+
+  if (!banners.length) return null
+  const b = banners[cur]
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl" style={{ background: b.color || '#8B1A2B' }}>
+      <div className="flex items-center gap-3 p-4">
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: 'rgba(255,255,255,0.18)' }}>
+          <Building2 size={20} color="#fff" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>Hamkor reklama</p>
+          <p className="text-sm font-semibold text-white truncate">{b.company}</p>
+          {b.slogan && <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>{b.slogan}</p>}
+        </div>
+        {b.link_url && (
+          <a href={b.link_url} target="_blank" rel="noreferrer"
+            className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.18)' }}>
+            <ExternalLink size={14} color="#fff" />
+          </a>
+        )}
+      </div>
+      {banners.length > 1 && (
+        <div className="flex justify-center gap-1 pb-2.5">
+          {banners.map((_, i) => (
+            <button key={i} onClick={() => setCur(i)}
+              className="rounded-full transition-all"
+              style={{
+                height: '4px',
+                width: i === cur ? '18px' : '6px',
+                background: i === cur ? '#fff' : 'rgba(255,255,255,0.35)',
+                border: 'none', padding: 0, cursor: 'pointer'
+              }} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const { agent } = useAuthStore()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [banners, setBanners] = useState([])
 
   useEffect(() => {
     Promise.all([
       clientsApi.list(),
       propertiesApi.list(),
       leadsApi.list(),
-    ]).then(([c, p, l]) => {
+      api.get('/api/banners').catch(() => ({ data: [] })),
+    ]).then(([c, p, l, b]) => {
       setData({
         clients:    c.data,
         properties: p.data,
         leads:      l.data,
       })
+      setBanners(b.data || [])
     }).finally(() => setLoading(false))
   }, [])
 
@@ -40,6 +97,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-5xl">
+
+      {/* Banner slider */}
+      {banners.length > 0 && <BannerSlider banners={banners} />}
 
       {/* Greeting */}
       <div className="flex items-center justify-between">

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Users, TrendingUp, AlertCircle, CheckCircle, Clock,
   XCircle, RefreshCw, Plus, Send, Shield, BarChart2,
-  Phone, Calendar, Zap, Crown, Gift
+  Phone, Calendar, Zap, Crown, Gift, Trash2
 } from 'lucide-react'
 import api from '../../services/api'
 import { Btn, Badge, Modal, Input, Select, Spinner, StatCard } from '../../components/ui'
@@ -17,6 +17,10 @@ const adminApi = {
   setPlan:     (id, data)   => api.put(`/api/admin/agents/${id}/plan`, data),
   addAgent:    (data)       => api.post('/api/admin/agents', data),
   sendReport:  ()           => api.post('/api/admin/report'),
+  banners:     ()           => api.get('/api/banners'),
+  addBanner:   (data)       => api.post('/api/banners', data),
+  delBanner:   (id)         => api.delete(`/api/banners/${id}`),
+  togBanner:   (id, active) => api.put(`/api/banners/${id}`, { is_active: active }),
 }
 
 const STATUS_COLORS = {
@@ -39,9 +43,10 @@ export default function AdminPanel() {
   const load = async () => {
     setLoading(true)
     try {
-      const [a, s] = await Promise.all([adminApi.agents(), adminApi.stats()])
+      const [a, s, b] = await Promise.all([adminApi.agents(), adminApi.stats(), adminApi.banners()])
       setAgents(a.data)
       setStats(s.data)
+      setBanners(b.data || [])
     } catch (err) {
       toast.error('Yuklashda xato')
     } finally {
@@ -169,6 +174,93 @@ export default function AdminPanel() {
           ))}
         </div>
       )}
+
+      {/* Banners */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+            <Zap size={15} className="text-amber-500" /> Reklama bannerlar
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <input
+            placeholder="Kompaniya nomi *"
+            value={bannerForm.company}
+            onChange={e => setBannerForm(f => ({ ...f, company: e.target.value }))}
+            className="input"
+          />
+          <input
+            placeholder="Slogan (ixtiyoriy)"
+            value={bannerForm.slogan}
+            onChange={e => setBannerForm(f => ({ ...f, slogan: e.target.value }))}
+            className="input"
+          />
+          <input
+            placeholder="Link (https://...)"
+            value={bannerForm.link_url}
+            onChange={e => setBannerForm(f => ({ ...f, link_url: e.target.value }))}
+            className="input"
+          />
+        </div>
+        <div className="flex items-center gap-3 mb-4">
+          <label className="text-xs text-gray-500">Rang:</label>
+          <input type="color" value={bannerForm.color}
+            onChange={e => setBannerForm(f => ({ ...f, color: e.target.value }))}
+            className="w-10 h-8 rounded cursor-pointer border border-gray-200" />
+          <div className="flex-1 h-10 rounded-xl flex items-center px-3"
+            style={{ background: bannerForm.color }}>
+            <span className="text-white text-xs opacity-80">
+              {bannerForm.company || 'Kompaniya nomi'}
+            </span>
+          </div>
+          <Btn size="sm" onClick={async () => {
+            if (!bannerForm.company) return toast.error('Kompaniya nomini kiriting')
+            await adminApi.addBanner(bannerForm)
+            setBannerForm({ company: '', slogan: '', color: '#8B1A2B', link_url: '' })
+            const b = await adminApi.banners()
+            setBanners(b.data || [])
+            toast.success('Banner qo\'shildi!')
+          }}>
+            <Plus size={14} /> Qo'shish
+          </Btn>
+        </div>
+
+        {banners.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Hali banner yo'q</p>
+        ) : (
+          <div className="space-y-2">
+            {banners.map(b => (
+              <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100">
+                <div className="w-8 h-8 rounded-lg flex-shrink-0" style={{ background: b.color || '#8B1A2B' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{b.company}</p>
+                  {b.slogan && <p className="text-xs text-gray-400">{b.slogan}</p>}
+                </div>
+                <button
+                  onClick={async () => {
+                    await adminApi.togBanner(b.id, !b.is_active)
+                    const res = await adminApi.banners()
+                    setBanners(res.data || [])
+                  }}
+                  className={`text-xs px-2.5 py-1 rounded-full font-medium ${b.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  {b.is_active ? 'Faol' : 'Nofaol'}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm('O\'chirasizmi?')) return
+                    await adminApi.delBanner(b.id)
+                    const res = await adminApi.banners()
+                    setBanners(res.data || [])
+                  }}
+                  className="text-red-400 hover:text-red-600 p-1">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Plan modal */}
       <PlanModal
