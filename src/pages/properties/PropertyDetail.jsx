@@ -254,7 +254,10 @@ export default function PropertyDetail() {
           {p.area && <InfoRow label="Maydon" value={p.area + ' m²'} />}
           {p.floor && <InfoRow label="Qavat" value={`${p.floor} / ${p.total_floors || '?'}`} />}
 
-          <InfoRow label="Ko'cha" value={p.landmark || p.display_address || p.district || '—'} />
+          <InfoRow label="Ko'cha" value={(p.landmark || '').split(' | ')[0] || p.display_address || p.district || '—'} />
+          {(p.landmark || '').split(' | ')[1] && (
+            <InfoRow label="Mo'ljal" value={(p.landmark || '').split(' | ')[1]} />
+          )}
 
           {p.district && <InfoRow label="Tuman" value={p.district} />}
 
@@ -423,7 +426,9 @@ function EditPropertyModal({ open, property: p, onClose, onSaved }) {
         price: p.price || '',
         city: p.region || '',
         district: p.district || '',
-        street: p.landmark || parts[0] || '',
+        street:        (p.landmark || '').split(' | ')[0] || parts[0] || '',
+        landmark_note: (p.landmark || '').split(' | ')[1] || '',
+        location_url:  p.location_url || '',
         house_number: parts[1] || '',
         owner_name: p.owner_name || '',
         owner_phone: p.owner_phone || '',
@@ -447,9 +452,10 @@ function EditPropertyModal({ open, property: p, onClose, onSaved }) {
     try {
       await propertiesApi.update(p.id, {
         ...form,
-        region: form.city,
-        landmark: form.street,
-        address: form.street + (form.house_number ? ', ' + form.house_number : ''),
+        region:       form.city,
+        landmark:     [form.street, form.landmark_note].filter(Boolean).join(' | '),
+        address:      form.street + (form.house_number ? ', ' + form.house_number : ''),
+        location_url: form.location_url || null,
       })
 
       toast.success("Obyekt yangilandi!")
@@ -515,6 +521,7 @@ function EditPropertyModal({ open, property: p, onClose, onSaved }) {
             </div>
           </div>
           <Input label="Mo'ljal" value={form.landmark_note || ''} onChange={e => set('landmark_note', e.target.value)} placeholder="Supermarket yonida, 5-avtobus bekati" />
+          <Input label="Lokatsiya (Google Maps link)" value={form.location_url || ''} onChange={e => set('location_url', e.target.value)} placeholder="https://maps.google.com/..." />
         </div>
 
         <div className="grid grid-cols-2 gap-3">

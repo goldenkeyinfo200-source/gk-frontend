@@ -9,15 +9,15 @@ import clsx from 'clsx'
 
 // ─── Xususiyatlar ro'yxati ───────────────────────────────
 const FEATURES = {
-  'Qurilish':    ["🧱 G'isht", '🏗 Beton', '🟦 Pena/gaz blok', '🪵 Sinch', "🏚 Xom g'isht", '🏠 Monolit'],
-  'Veranda':     ['🏡 3 metrli veranda', '🏡 6 metrli veranda'],
-  "Isitish":     ['🛁 Ariston', '🪣 Titan', '🔥 Vaillant', '♨️ Otopleniye', '🌡 Issiq pol'],
-  'Pol':         ['🪵 Parket', '🪵 Taxta pol', '🧶 Kovrolín', '📄 Linoleum'],
-  "Ta'mir":      ["✨ Evro ta'mir", "🔨 O'rtacha ta'mir", "🏚 Bez ta'mir"],
-  'Eshik/Rom':   ['📦 Karobka', '🪟 Taxta rom/eshik', '🪟 Akfa/Ekopen rom', '🚪 MDF eshik'],
-  'Jihozlar':    ['🛋️ Jihozlari bilan', '🪑 Jihozsiz'],
-  'Kommunal':    ['📶 Wi-Fi', '🎥 Kamera', '💧 Suv', '🌿 Gaz', '⚡ Svет', '🔌 Kanalizatsiya'],
-  'Qulayliklar': ["🛗 Lift bor", "🏫 Maktab", "🏫 Bog'cha", '🛒 Supermarket', '🅿️ Parkovka', "🛣 Katta yo'l yaqinida"],
+  'Qurilish':    ["G'isht", 'Beton', 'Pena/gaz blok', 'Sinch', "Xom g'isht", 'Monolit'],
+  'Veranda':     ['3 metrli veranda', '6 metrli veranda'],
+  'Isitish':     ['Ariston', 'Titan', 'Vaillant', 'Otopleniye', 'Issiq pol'],
+  'Pol':         ['Parket', 'Taxta pol', 'Kovrolyn', 'Linoleum'],
+  "Ta'mir":      ["Evro ta'mir", "O'rtacha ta'mir", "Bez ta'mir"],
+  'Eshik/Rom':   ['Karobka', 'Taxta rom/eshik', 'Akfa/Ekopen rom', 'MDF eshik'],
+  'Jihozlar':    ['Jihozlari bilan', 'Jihozsiz'],
+  'Kommunal':    ['Wi-Fi', 'Kamera', 'Suv', 'Gaz', 'Svet', 'Kanalizatsiya'],
+  'Qulayliklar': ['Lift bor', 'Maktab', "Bog'cha", 'Supermarket', 'Parkovka', "Katta yo'l yaqinida"],
 }
 
 export default function Properties() {
@@ -256,7 +256,8 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
   const [form, setForm] = useState({
     purpose: 'sell', property_type: 'apartment', rooms: '', area: '',
     floor: '', total_floors: '', price: '', city: '', district: '',
-    street: '', house_number: '', owner_name: '', owner_phone: '',
+    street: '', house_number: '', landmark_note: '', location_url: '',
+    owner_name: '', owner_phone: '',
     mortgage: false, installment: false,
   })
   const [features, setFeatures] = useState([]) // tanlangan xususiyatlar
@@ -287,7 +288,9 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
         price:         property.price         || '',
         city:          property.region        || '',
         district:      property.district      || '',
-        street:        property.landmark || parts[0] || '',
+        street:        (property.landmark || '').split(' | ')[0] || parts[0] || '',
+        landmark_note: (property.landmark || '').split(' | ')[1] || '',
+        location_url:  property.location_url || '',
         house_number:  parts[1]               || '',
         owner_name:    property.owner_name    || '',
         owner_phone:   property.owner_phone   || '',
@@ -320,9 +323,10 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
 
       const payload = {
         ...form,
-        region:      form.city,
-        landmark:    [form.street, form.landmark_note].filter(Boolean).join(' | '),
-        address:     form.street + (form.house_number ? ', ' + form.house_number : ''),
+        region:       form.city,
+        landmark:     [form.street, form.landmark_note].filter(Boolean).join(' | '),
+        address:      form.street + (form.house_number ? ', ' + form.house_number : ''),
+        location_url: form.location_url || null,
         description,
       }
 
@@ -396,7 +400,8 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
               <p className="text-xs text-gray-400 mt-1">🔒 Faqat agentga ko'rinadi</p>
             </div>
           </div>
-          <Input label="Mo'ljal (avtobus bekati, do'kon va h.k.)" value={form.landmark_note || ''} onChange={e => set('landmark_note', e.target.value)} placeholder="Supermarket yonida, 5-avtobus bekati" />
+          <Input label="Mo'ljal" value={form.landmark_note || ''} onChange={e => set('landmark_note', e.target.value)} placeholder="Supermarket yonida, 5-avtobus bekati" />
+          <Input label="Lokatsiya (Google Maps link)" value={form.location_url || ''} onChange={e => set('location_url', e.target.value)} placeholder="https://maps.google.com/..." />
         </div>
 
         {/* Mulkdor */}
