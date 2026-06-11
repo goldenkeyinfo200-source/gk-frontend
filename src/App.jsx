@@ -10,6 +10,7 @@ import Properties from './pages/properties/Properties'
 import PropertyDetail from './pages/properties/PropertyDetail'
 import Leads from './pages/leads/Leads'
 import AdminPanel from './pages/admin/AdminPanel'
+import Profile from './pages/profile/Profile'
 import './styles/global.css'
 
 function PrivateRoute({ children }) {
@@ -44,23 +45,43 @@ export default function App() {
           success: { iconTheme: { primary: '#c62828', secondary: '#fff' } },
         }}
       />
+
       <Routes>
-        <Route path="/login" element={
-          <PublicRoute><Login /></PublicRoute>
-        } />
-        <Route path="/" element={
-          <PrivateRoute><Layout /></PrivateRoute>
-        }>
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <Layout />
+            </PrivateRoute>
+          }
+        >
           <Route index element={<Dashboard />} />
-          <Route path="clients"         element={<Clients />} />
-          <Route path="clients/:id"     element={<ClientDetail />} />
-          <Route path="properties"      element={<Properties />} />
-          <Route path="properties/:id"  element={<PropertyDetail />} />
-          <Route path="leads"           element={<Leads />} />
-          <Route path="admin"           element={
-            <AdminRoute><AdminPanel /></AdminRoute>
-          } />
+          <Route path="clients" element={<Clients />} />
+          <Route path="clients/:id" element={<ClientDetail />} />
+          <Route path="properties" element={<Properties />} />
+          <Route path="properties/:id" element={<PropertyDetail />} />
+          <Route path="leads" element={<Leads />} />
+          <Route path="profile" element={<Profile />} />
+
+          <Route
+            path="admin"
+            element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
+            }
+          />
         </Route>
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
