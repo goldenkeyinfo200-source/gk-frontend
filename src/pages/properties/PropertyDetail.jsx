@@ -480,10 +480,7 @@ function EditPropertyModal({ open, property: p, onClose, onSaved }) {
         </div>
 
         <div className="grid grid-cols-4 gap-3">
-          <Select label="Xonalar" value={form.rooms || ''} onChange={e => set('rooms', e.target.value)}>
-            <option value="">—</option>
-            {ROOMS.map(r => <option key={r} value={r}>{r}</option>)}
-          </Select>
+          <Input label="Xonalar" type="text" value={form.rooms || ''} onChange={e => set('rooms', e.target.value)} placeholder="2" />
 
           <Input label="Maydon m²" type="number" value={form.area || ''} onChange={e => set('area', e.target.value)} />
           <Input label="Qavat" type="number" value={form.floor || ''} onChange={e => set('floor', e.target.value)} />
@@ -517,6 +514,7 @@ function EditPropertyModal({ open, property: p, onClose, onSaved }) {
               <p className="text-xs text-gray-400 mt-1">🔒 Faqat agentga</p>
             </div>
           </div>
+          <Input label="Mo'ljal" value={form.landmark_note || ''} onChange={e => set('landmark_note', e.target.value)} placeholder="Supermarket yonida, 5-avtobus bekati" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">

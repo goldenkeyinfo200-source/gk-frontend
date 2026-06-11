@@ -9,13 +9,15 @@ import clsx from 'clsx'
 
 // ─── Xususiyatlar ro'yxati ───────────────────────────────
 const FEATURES = {
-  'Qurilish':    ['🧱 G\'isht', '🏗 Beton panel', '🪵 Sinch', '🟦 Gaz-pena blok', '🏠 Monolit'],
-  'Isitish':     ['♨️ Markaziy isitish', '🔥 Gaz qozon', '⚡ Elektr isitish', '☀️ Quyosh paneli'],
-  'Suv':         ['💧 Shahar suvi', '🚿 Issiq suv', '🛁 Aristona', '🪣 Titan'],
-  'Qulayliklar': ['🛗 Lift', '📶 Wi-Fi', '🅿️ Avtoturargoh', '🏊 Basseyn', '🏋️ Sport zal', '🔐 Qo\'riqlash', '🎥 Kamera'],
-  'Holati':      ['🛋️ Mebel bor', '📺 Texnika bor', '🔑 Yangi ta\'mir', '🏚 Ta\'mirsiz', '🏡 Evro ta\'mir'],
-  'Kommunal':    ['⚡ Elektr', '🌿 Gaz', '🔌 Kanalizatsiya', '📡 Internet'],
-  'Boshqalar':   ['🌳 Hovli bor', '🐕 Hayvon ruxsat', '🚬 Chekish ruxsat', '👶 Bolali oila', '🏢 Yuqori qavat'],
+  'Qurilish':    ["🧱 G'isht", '🏗 Beton', '🟦 Pena/gaz blok', '🪵 Sinch', "🏚 Xom g'isht", '🏠 Monolit'],
+  'Veranda':     ['🏡 3 metrli veranda', '🏡 6 metrli veranda'],
+  "Isitish":     ['🛁 Ariston', '🪣 Titan', '🔥 Vaillant', '♨️ Otopleniye', '🌡 Issiq pol'],
+  'Pol':         ['🪵 Parket', '🪵 Taxta pol', '🧶 Kovrolín', '📄 Linoleum'],
+  "Ta'mir":      ["✨ Evro ta'mir", "🔨 O'rtacha ta'mir", "🏚 Bez ta'mir"],
+  'Eshik/Rom':   ['📦 Karobka', '🪟 Taxta rom/eshik', '🪟 Akfa/Ekopen rom', '🚪 MDF eshik'],
+  'Jihozlar':    ['🛋️ Jihozlari bilan', '🪑 Jihozsiz'],
+  'Kommunal':    ['📶 Wi-Fi', '🎥 Kamera', '💧 Suv', '🌿 Gaz', '⚡ Svет', '🔌 Kanalizatsiya'],
+  'Qulayliklar': ["🛗 Lift bor", "🏫 Maktab", "🏫 Bog'cha", '🛒 Supermarket', '🅿️ Parkovka', "🛣 Katta yo'l yaqinida"],
 }
 
 export default function Properties() {
@@ -319,7 +321,7 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
       const payload = {
         ...form,
         region:      form.city,
-        landmark:    form.street,
+        landmark:    [form.street, form.landmark_note].filter(Boolean).join(' | '),
         address:     form.street + (form.house_number ? ', ' + form.house_number : ''),
         description,
       }
@@ -363,10 +365,7 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
 
         {/* O'lchamlar */}
         <div className="grid grid-cols-4 gap-3">
-          <Select label="Xonalar" value={form.rooms} onChange={e => set('rooms', e.target.value)}>
-            <option value="">—</option>
-            {ROOMS.map(r => <option key={r} value={r}>{r}</option>)}
-          </Select>
+          <Input label="Xonalar" type="text" value={form.rooms} onChange={e => set('rooms', e.target.value)} placeholder="2" />
           <Input label="Maydon m²" type="number" value={form.area}        onChange={e => set('area', e.target.value)} />
           <Input label="Qavat"     type="number" value={form.floor}       onChange={e => set('floor', e.target.value)} />
           <Input label="Jami"      type="number" value={form.total_floors} onChange={e => set('total_floors', e.target.value)} />
@@ -397,6 +396,7 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
               <p className="text-xs text-gray-400 mt-1">🔒 Faqat agentga ko'rinadi</p>
             </div>
           </div>
+          <Input label="Mo'ljal (avtobus bekati, do'kon va h.k.)" value={form.landmark_note || ''} onChange={e => set('landmark_note', e.target.value)} placeholder="Supermarket yonida, 5-avtobus bekati" />
         </div>
 
         {/* Mulkdor */}
