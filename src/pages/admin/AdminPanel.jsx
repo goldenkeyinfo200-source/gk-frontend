@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
-  Users, TrendingUp, AlertCircle, CheckCircle, Clock,
-  XCircle, RefreshCw, Plus, Send, Shield, BarChart2,
-  Phone, Calendar, Zap, Crown, Gift, Trash2
+  Users, AlertCircle, CheckCircle, XCircle, RefreshCw,
+  Plus, Send, Shield, Phone, Zap, Crown, Gift, Trash2,
+  Pencil
 } from 'lucide-react'
 import api from '../../services/api'
 import { Btn, Badge, Modal, Input, Select, Spinner, StatCard } from '../../components/ui'
@@ -17,46 +17,59 @@ const adminApi = {
   setPlan:     (id, data)   => api.put(`/api/admin/agents/${id}/plan`, data),
   addAgent:    (data)       => api.post('/api/admin/agents', data),
   sendReport:  ()           => api.post('/api/admin/report'),
-  banners:     ()           => api.get('/api/banners'),
+
+  banners:     ()           => api.get('/api/banners/admin/all'),
   addBanner:   (data)       => api.post('/api/banners', data),
+  editBanner:  (id, data)   => api.put(`/api/banners/${id}`, data),
   delBanner:   (id)         => api.delete(`/api/banners/${id}`),
   togBanner:   (id, active) => api.put(`/api/banners/${id}`, { is_active: active }),
 }
 
 const STATUS_COLORS = {
   pro:        { color: 'gold',  label: 'Pro',        icon: Crown  },
-  corporate:  { color: 'blue',  label: 'Korporativ', icon: Shield },
-  trial:      { color: 'green', label: 'Sinov',      icon: Gift   },
-  expired:    { color: 'red',   label: 'Tugagan',    icon: XCircle},
+  corporate: { color: 'blue',  label: 'Korporativ', icon: Shield },
+  trial:     { color: 'green', label: 'Sinov',      icon: Gift   },
+  expired:   { color: 'red',   label: 'Tugagan',    icon: XCircle},
+}
+
+const emptyBannerForm = {
+  company: '',
+  slogan: '',
+  color: '#8B1A2B',
+  link_url: '',
+  image_url: '',
+  start_date: '',
+  end_date: '',
+  sort_order: 0,
 }
 
 export default function AdminPanel() {
-  const [agents, setAgents]     = useState([])
-  const [stats, setStats]       = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [tab, setTab]           = useState('agents')
-  const [filter, setFilter]     = useState('all')
-  const [planModal, setPlanModal] = useState(null) // agent object
+  const [agents, setAgents] = useState([])
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all')
+  const [planModal, setPlanModal] = useState(null)
   const [addModal, setAddModal] = useState(false)
   const [reporting, setReporting] = useState(false)
 
-  // Reklama bannerlar uchun state
   const [banners, setBanners] = useState([])
-  const [bannerForm, setBannerForm] = useState({
-    company: '',
-    slogan: '',
-    color: '#8B1A2B',
-    link_url: '',
-  })
+  const [bannerForm, setBannerForm] = useState(emptyBannerForm)
+  const [editingBanner, setEditingBanner] = useState(null)
 
   const load = async () => {
     setLoading(true)
     try {
-      const [a, s, b] = await Promise.all([adminApi.agents(), adminApi.stats(), adminApi.banners()])
+      const [a, s, b] = await Promise.all([
+        adminApi.agents(),
+        adminApi.stats(),
+        adminApi.banners(),
+      ])
+
       setAgents(Array.isArray(a.data) ? a.data : [])
       setStats(s.data || null)
       setBanners(Array.isArray(b.data) ? b.data : [])
     } catch (err) {
+      console.error(err)
       toast.error('Yuklashda xato')
     } finally {
       setLoading(false)
@@ -70,7 +83,9 @@ export default function AdminPanel() {
       const { data } = await adminApi.toggle(id)
       toast.success(data.is_active ? 'Faollashtirildi ✅' : "O'chirildi ⛔")
       load()
-    } catch { toast.error('Xato') }
+    } catch {
+      toast.error('Xato')
+    }
   }
 
   const handleReport = async () => {
@@ -79,30 +94,87 @@ export default function AdminPanel() {
       const { data } = await adminApi.sendReport()
       toast.success(data.report_sent
         ? '✅ Hisobot Telegram ga yuborildi!'
-        : '✅ Hisobot tayyorlandi (Telegram ID yo\'q)')
-    } catch { toast.error('Xato') } finally { setReporting(false) }
+        : '✅ Hisobot tayyorlandi')
+    } catch {
+      toast.error('Xato')
+    } finally {
+      setReporting(false)
+    }
+  }
+
+  const resetBannerForm = () => {
+    setBannerForm(emptyBannerForm)
+    setEditingBanner(null)
+  }
+
+  const saveBanner = async () => {
+    try {
+      if (!bannerForm.company.trim()) {
+        return toast.error('Kompaniya nomini kiriting')
+      }
+
+      const payload = {
+        company: bannerForm.company.trim(),
+        slogan: bannerForm.slogan || null,
+        color: bannerForm.color || '#8B1A2B',
+        link_url: bannerForm.link_url || null,
+        image_url: bannerForm.image_url || null,
+        start_date: bannerForm.start_date || null,
+        end_date: bannerForm.end_date || null,
+        sort_order: Number(bannerForm.sort_order || 0),
+      }
+
+      if (editingBanner) {
+        await adminApi.editBanner(editingBanner.id, payload)
+        toast.success('Banner yangilandi!')
+      } else {
+        await adminApi.addBanner(payload)
+        toast.success("Banner qo'shildi!")
+      }
+
+      resetBannerForm()
+      const res = await adminApi.banners()
+      setBanners(Array.isArray(res.data) ? res.data : [])
+    } catch (err) {
+      console.error(err)
+      toast.error(err.response?.data?.error || 'Banner saqlashda xato')
+    }
+  }
+
+  const startEditBanner = (banner) => {
+    setEditingBanner(banner)
+    setBannerForm({
+      company: banner.company || '',
+      slogan: banner.slogan || '',
+      color: banner.color || '#8B1A2B',
+      link_url: banner.link_url || '',
+      image_url: banner.image_url || '',
+      start_date: banner.start_date ? String(banner.start_date).slice(0, 16) : '',
+      end_date: banner.end_date ? String(banner.end_date).slice(0, 16) : '',
+      sort_order: banner.sort_order || 0,
+    })
   }
 
   const filtered = agents.filter(a => {
-    if (filter === 'all')     return true
-    if (filter === 'active')  return a.is_active && a.subscription_status !== 'expired'
+    if (filter === 'all') return true
+    if (filter === 'active') return a.is_active && a.subscription_status !== 'expired'
     if (filter === 'expired') return a.subscription_status === 'expired'
-    if (filter === 'paid')    return ['pro','corporate'].includes(a.plan)
-    if (filter === 'trial')   return a.subscription_status === 'trial'
+    if (filter === 'paid') return ['pro', 'corporate'].includes(a.plan)
+    if (filter === 'trial') return a.subscription_status === 'trial'
     return true
   })
 
   return (
     <div className="space-y-5 max-w-5xl">
 
-      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
             <Shield size={20} className="text-cherry-700" /> Admin Panel
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Agentlar va tariflarni boshqarish</p>
+          <p className="text-sm text-gray-500 mt-0.5">Agentlar, tariflar va reklamalarni boshqarish</p>
         </div>
+
         <div className="flex gap-2 flex-wrap">
           <Btn variant="outline" size="sm" onClick={load}>
             <RefreshCw size={14} /> Yangilash
@@ -116,17 +188,15 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard icon={Users}       label="Jami agentlar"  value={stats.total_agents}   color="cherry" />
-          <StatCard icon={CheckCircle} label="Faol"           value={stats.active_agents}  color="green"  />
-          <StatCard icon={Crown}       label="To'lovli"       value={stats.paid_agents}    color="amber"  />
+          <StatCard icon={Users} label="Jami agentlar" value={stats.total_agents} color="cherry" />
+          <StatCard icon={CheckCircle} label="Faol" value={stats.active_agents} color="green" />
+          <StatCard icon={Crown} label="To'lovli" value={stats.paid_agents} color="amber" />
           <StatCard icon={AlertCircle} label="Muddati o'tgan" value={stats.expired_agents} color="cherry" />
         </div>
       )}
 
-      {/* Today */}
       {stats && (
         <div className="card p-4">
           <p className="text-xs font-medium text-gray-500 mb-3 flex items-center gap-1.5">
@@ -149,24 +219,216 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* Filters */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+            <Zap size={15} className="text-amber-500" /> Reklama bannerlar
+          </h2>
+
+          {editingBanner && (
+            <button
+              onClick={resetBannerForm}
+              className="text-xs text-gray-500 hover:text-cherry-700"
+            >
+              Bekor qilish
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <input
+            placeholder="Kompaniya nomi *"
+            value={bannerForm.company}
+            onChange={e => setBannerForm(f => ({ ...f, company: e.target.value }))}
+            className="input"
+          />
+
+          <input
+            placeholder="Slogan"
+            value={bannerForm.slogan}
+            onChange={e => setBannerForm(f => ({ ...f, slogan: e.target.value }))}
+            className="input"
+          />
+
+          <input
+            placeholder="Tayyor reklama rasmi URL"
+            value={bannerForm.image_url}
+            onChange={e => setBannerForm(f => ({ ...f, image_url: e.target.value }))}
+            className="input sm:col-span-2"
+          />
+
+          <input
+            placeholder="Link: https://..."
+            value={bannerForm.link_url}
+            onChange={e => setBannerForm(f => ({ ...f, link_url: e.target.value }))}
+            className="input sm:col-span-2"
+          />
+
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Boshlanish vaqti</label>
+            <input
+              type="datetime-local"
+              value={bannerForm.start_date}
+              onChange={e => setBannerForm(f => ({ ...f, start_date: e.target.value }))}
+              className="input"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Tugash vaqti</label>
+            <input
+              type="datetime-local"
+              value={bannerForm.end_date}
+              onChange={e => setBannerForm(f => ({ ...f, end_date: e.target.value }))}
+              className="input"
+            />
+          </div>
+        </div>
+
+        {bannerForm.image_url ? (
+          <div className="mb-3 rounded-xl overflow-hidden border border-cherry-100">
+            <img
+              src={bannerForm.image_url}
+              alt="Banner preview"
+              className="w-full h-32 object-cover"
+            />
+          </div>
+        ) : (
+          <div
+            className="mb-3 h-20 rounded-xl flex items-center px-4"
+            style={{ background: bannerForm.color }}
+          >
+            <div>
+              <p className="text-white text-sm font-semibold">
+                {bannerForm.company || 'Kompaniya nomi'}
+              </p>
+              <p className="text-white/80 text-xs">
+                {bannerForm.slogan || 'Slogan'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
+          <label className="text-xs text-gray-500">Rang:</label>
+
+          <input
+            type="color"
+            value={bannerForm.color}
+            onChange={e => setBannerForm(f => ({ ...f, color: e.target.value }))}
+            className="w-10 h-8 rounded cursor-pointer border border-gray-200"
+          />
+
+          <input
+            type="number"
+            placeholder="Tartib"
+            value={bannerForm.sort_order}
+            onChange={e => setBannerForm(f => ({ ...f, sort_order: e.target.value }))}
+            className="input w-24"
+          />
+
+          <Btn size="sm" onClick={saveBanner}>
+            <Plus size={14} />
+            {editingBanner ? 'Saqlash' : "Qo'shish"}
+          </Btn>
+        </div>
+
+        {banners.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Hali banner yo'q</p>
+        ) : (
+          <div className="space-y-2">
+            {banners.map(b => (
+              <div key={b.id} className="p-3 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-3">
+                  {b.image_url ? (
+                    <img
+                      src={b.image_url}
+                      alt={b.company}
+                      className="w-14 h-12 object-cover rounded-lg flex-shrink-0"
+                    />
+                  ) : (
+                    <div
+                      className="w-10 h-10 rounded-lg flex-shrink-0"
+                      style={{ background: b.color || '#8B1A2B' }}
+                    />
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{b.company}</p>
+                    {b.slogan && <p className="text-xs text-gray-400">{b.slogan}</p>}
+
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      {b.start_date ? `Boshlanish: ${fmtDate(b.start_date)} · ` : ''}
+                      {b.end_date ? `Tugash: ${fmtDate(b.end_date)}` : 'Muddat belgilanmagan'}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      await adminApi.togBanner(b.id, !b.is_active)
+                      const res = await adminApi.banners()
+                      setBanners(Array.isArray(res.data) ? res.data : [])
+                    }}
+                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                      b.is_active
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {b.is_active ? 'Faol' : 'Nofaol'}
+                  </button>
+
+                  <button
+                    onClick={() => startEditBanner(b)}
+                    className="text-blue-500 hover:text-blue-700 p-1"
+                    title="Tahrirlash"
+                  >
+                    <Pencil size={14} />
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      if (!confirm("O'chirasizmi?")) return
+                      await adminApi.delBanner(b.id)
+                      const res = await adminApi.banners()
+                      setBanners(Array.isArray(res.data) ? res.data : [])
+                      toast.success("Banner o'chirildi")
+                    }}
+                    className="text-red-400 hover:text-red-600 p-1"
+                    title="O'chirish"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-1 bg-white border border-cherry-100 rounded-2xl p-1 flex-wrap">
         {[
-          { key: 'all',     label: `Barchasi (${agents.length})` },
-          { key: 'active',  label: 'Faol'        },
-          { key: 'trial',   label: 'Sinov'        },
-          { key: 'paid',    label: 'To\'lovli'    },
-          { key: 'expired', label: 'Tugagan'      },
+          { key: 'all', label: `Barchasi (${agents.length})` },
+          { key: 'active', label: 'Faol' },
+          { key: 'trial', label: 'Sinov' },
+          { key: 'paid', label: "To'lovli" },
+          { key: 'expired', label: 'Tugagan' },
         ].map(f => (
-          <button key={f.key} onClick={() => setFilter(f.key)}
-            className={clsx('px-3 py-1.5 rounded-xl text-xs font-medium transition-all',
-              filter === f.key ? 'bg-cherry-700 text-white' : 'text-gray-500 hover:text-cherry-700')}>
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={clsx(
+              'px-3 py-1.5 rounded-xl text-xs font-medium transition-all',
+              filter === f.key
+                ? 'bg-cherry-700 text-white'
+                : 'text-gray-500 hover:text-cherry-700'
+            )}
+          >
             {f.label}
           </button>
         ))}
       </div>
 
-      {/* Agents list */}
       {loading ? (
         <div className="flex justify-center py-16"><Spinner /></div>
       ) : filtered.length === 0 ? (
@@ -184,94 +446,6 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* Banners */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-2">
-            <Zap size={15} className="text-amber-500" /> Reklama bannerlar
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-          <input
-            placeholder="Kompaniya nomi *"
-            value={bannerForm.company}
-            onChange={e => setBannerForm(f => ({ ...f, company: e.target.value }))}
-            className="input"
-          />
-          <input
-            placeholder="Slogan (ixtiyoriy)"
-            value={bannerForm.slogan}
-            onChange={e => setBannerForm(f => ({ ...f, slogan: e.target.value }))}
-            className="input"
-          />
-          <input
-            placeholder="Link (https://...)"
-            value={bannerForm.link_url}
-            onChange={e => setBannerForm(f => ({ ...f, link_url: e.target.value }))}
-            className="input"
-          />
-        </div>
-        <div className="flex items-center gap-3 mb-4">
-          <label className="text-xs text-gray-500">Rang:</label>
-          <input type="color" value={bannerForm.color}
-            onChange={e => setBannerForm(f => ({ ...f, color: e.target.value }))}
-            className="w-10 h-8 rounded cursor-pointer border border-gray-200" />
-          <div className="flex-1 h-10 rounded-xl flex items-center px-3"
-            style={{ background: bannerForm.color }}>
-            <span className="text-white text-xs opacity-80">
-              {bannerForm.company || 'Kompaniya nomi'}
-            </span>
-          </div>
-          <Btn size="sm" onClick={async () => {
-            if (!bannerForm.company) return toast.error('Kompaniya nomini kiriting')
-            await adminApi.addBanner(bannerForm)
-            setBannerForm({ company: '', slogan: '', color: '#8B1A2B', link_url: '' })
-            const b = await adminApi.banners()
-            setBanners(b.data || [])
-            toast.success('Banner qo\'shildi!')
-          }}>
-            <Plus size={14} /> Qo'shish
-          </Btn>
-        </div>
-
-        {banners.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-4">Hali banner yo'q</p>
-        ) : (
-          <div className="space-y-2">
-            {banners.map(b => (
-              <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100">
-                <div className="w-8 h-8 rounded-lg flex-shrink-0" style={{ background: b.color || '#8B1A2B' }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{b.company}</p>
-                  {b.slogan && <p className="text-xs text-gray-400">{b.slogan}</p>}
-                </div>
-                <button
-                  onClick={async () => {
-                    await adminApi.togBanner(b.id, !b.is_active)
-                    const res = await adminApi.banners()
-                    setBanners(res.data || [])
-                  }}
-                  className={`text-xs px-2.5 py-1 rounded-full font-medium ${b.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {b.is_active ? 'Faol' : 'Nofaol'}
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!confirm('O\'chirasizmi?')) return
-                    await adminApi.delBanner(b.id)
-                    const res = await adminApi.banners()
-                    setBanners(res.data || [])
-                  }}
-                  className="text-red-400 hover:text-red-600 p-1">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Plan modal */}
       <PlanModal
         open={!!planModal}
         agent={planModal}
@@ -279,7 +453,6 @@ export default function AdminPanel() {
         onSaved={() => { setPlanModal(null); load() }}
       />
 
-      {/* Add agent modal */}
       <AddAgentModal
         open={addModal}
         onClose={() => setAddModal(false)}
@@ -289,13 +462,12 @@ export default function AdminPanel() {
   )
 }
 
-// ─── Agent Card ──────────────────────────────────────────
 function AgentCard({ agent: a, onToggle, onPlan }) {
   const st = STATUS_COLORS[a.subscription_status] || STATUS_COLORS.expired
   const StatusIcon = st.icon
 
   const daysColor =
-    a.days_left === 0  ? 'text-red-600 bg-red-50'    :
+    a.days_left === 0  ? 'text-red-600 bg-red-50' :
     a.days_left <= 3   ? 'text-amber-600 bg-amber-50' :
     a.days_left <= 7   ? 'text-orange-500 bg-orange-50' :
                          'text-green-600 bg-green-50'
@@ -307,7 +479,6 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
       a.subscription_status === 'expired' && a.is_active && 'border-red-200'
     )}>
       <div className="flex items-start gap-3">
-        {/* Avatar */}
         <div className={clsx(
           'w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0',
           a.is_active ? 'bg-cherry-100 text-cherry-700' : 'bg-gray-100 text-gray-400'
@@ -315,7 +486,6 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
           {a.full_name?.[0] || a.login?.[0] || 'A'}
         </div>
 
-        {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-gray-900 text-sm">{a.full_name || '—'}</span>
@@ -340,7 +510,6 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
             }
           </div>
 
-          {/* Days left */}
           <div className="flex items-center gap-3 mt-2 flex-wrap">
             <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-lg', daysColor)}>
               {a.days_left === 0
@@ -353,7 +522,7 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
                 Sinov tugaydi: {fmtDate(a.trial_end)}
               </span>
             )}
-            {a.plan_end && ['pro','corporate'].includes(a.plan) && (
+            {a.plan_end && ['pro', 'corporate'].includes(a.plan) && (
               <span className="text-xs text-gray-400">
                 Tarif tugaydi: {fmtDate(a.plan_end)}
               </span>
@@ -361,16 +530,11 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex flex-col gap-2 flex-shrink-0">
           <Btn variant="outline" size="sm" onClick={onPlan}>
             <Crown size={13} /> Tarif
           </Btn>
-          <Btn
-            variant={a.is_active ? 'outline' : 'primary'}
-            size="sm"
-            onClick={onToggle}
-          >
+          <Btn variant={a.is_active ? 'outline' : 'primary'} size="sm" onClick={onToggle}>
             {a.is_active
               ? <><XCircle size={13} /> O'chirish</>
               : <><CheckCircle size={13} /> Yoqish</>
@@ -382,9 +546,8 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
   )
 }
 
-// ─── Plan Modal ──────────────────────────────────────────
 function PlanModal({ open, agent, onClose, onSaved }) {
-  const [form, setForm]   = useState({ plan: 'pro', days: '30' })
+  const [form, setForm] = useState({ plan: 'pro', days: '30' })
   const [loading, setLoading] = useState(false)
 
   const submit = async (e) => {
@@ -406,7 +569,6 @@ function PlanModal({ open, agent, onClose, onSaved }) {
   return (
     <Modal open={open} onClose={onClose} title={`Tarif — ${agent.full_name || agent.login}`} size="sm">
       <form onSubmit={submit} className="space-y-4">
-        {/* Hozirgi holat */}
         <div className="bg-cherry-50 rounded-xl p-3 text-sm space-y-1">
           <div className="flex justify-between">
             <span className="text-gray-500">Hozirgi tarif</span>
@@ -422,40 +584,20 @@ function PlanModal({ open, agent, onClose, onSaved }) {
 
         <Select label="Yangi tarif" value={form.plan}
           onChange={e => setForm(p => ({ ...p, plan: e.target.value }))}>
-          <option value="trial">🎁 Sinov (bepul)</option>
+          <option value="trial">🎁 Sinov</option>
           <option value="pro">⭐ Pro</option>
           <option value="corporate">🏢 Korporativ</option>
-          <option value="free">⛔ Bloklash (bepul)</option>
+          <option value="free">⛔ Bloklash</option>
         </Select>
 
         {form.plan !== 'free' && (
-          <div>
-            <label className="text-xs font-medium text-gray-600 mb-1.5 block">Necha kun</label>
-            <div className="flex gap-2">
-              {['7', '14', '30', '90', '365'].map(d => (
-                <button key={d} type="button"
-                  onClick={() => setForm(p => ({ ...p, days: d }))}
-                  className={clsx(
-                    'flex-1 py-2 rounded-xl text-sm font-medium border transition-all',
-                    form.days === d
-                      ? 'bg-cherry-700 text-white border-cherry-700'
-                      : 'bg-white text-gray-600 border-cherry-100 hover:border-cherry-400'
-                  )}>
-                  {d === '365' ? '1 yil' : d + ' kun'}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Input
+            label="Necha kun"
+            type="number"
+            value={form.days}
+            onChange={e => setForm(p => ({ ...p, days: e.target.value }))}
+          />
         )}
-
-        {/* Telegram xabar preview */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
-          <p className="font-medium mb-1">📱 Agent Telegram ga xabar oladi:</p>
-          {form.plan === 'free'
-            ? '"⚠️ Hisobingiz vaqtincha to\'xtatildi."'
-            : `"🎉 ${form.plan === 'trial' ? 'Sinov' : form.plan} tarifi ${form.days} kun faollashtirildi!"`
-          }
-        </div>
 
         <div className="flex gap-2">
           <Btn type="button" variant="outline" onClick={onClose} className="flex-1">Bekor</Btn>
@@ -468,9 +610,8 @@ function PlanModal({ open, agent, onClose, onSaved }) {
   )
 }
 
-// ─── Add Agent Modal ─────────────────────────────────────
 function AddAgentModal({ open, onClose, onSaved }) {
-  const [form, setForm]   = useState({
+  const [form, setForm] = useState({
     login: '', password: '', full_name: '', phone: '', plan: '', days: '30'
   })
   const [loading, setLoading] = useState(false)
@@ -478,7 +619,7 @@ function AddAgentModal({ open, onClose, onSaved }) {
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.login || !form.password) return toast.error("Login va parol kerak")
+    if (!form.login || !form.password) return toast.error('Login va parol kerak')
     setLoading(true)
     try {
       await adminApi.addAgent(form)
@@ -501,6 +642,7 @@ function AddAgentModal({ open, onClose, onSaved }) {
           <Input label="Telefon" value={form.phone}
             onChange={e => set('phone', e.target.value)} placeholder="+998 90 123 45 67" />
         </div>
+
         <div className="grid grid-cols-2 gap-3">
           <Input label="Login *" value={form.login}
             onChange={e => set('login', e.target.value.toLowerCase())}
@@ -508,16 +650,19 @@ function AddAgentModal({ open, onClose, onSaved }) {
           <Input label="Parol *" type="password" value={form.password}
             onChange={e => set('password', e.target.value)} placeholder="••••••••" />
         </div>
+
         <Select label="Tarif" value={form.plan}
           onChange={e => set('plan', e.target.value)}>
-          <option value="">Sinov (14 kun bepul)</option>
+          <option value="">Sinov 14 kun</option>
           <option value="pro">Pro</option>
           <option value="corporate">Korporativ</option>
         </Select>
+
         {form.plan && (
           <Input label="Necha kun" type="number" value={form.days}
             onChange={e => set('days', e.target.value)} />
         )}
+
         <div className="flex gap-2">
           <Btn type="button" variant="outline" onClick={onClose} className="flex-1">Bekor</Btn>
           <Btn type="submit" loading={loading} className="flex-1">
