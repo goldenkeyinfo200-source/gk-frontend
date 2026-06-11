@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Users, AlertCircle, CheckCircle, XCircle, RefreshCw,
   Plus, Send, Shield, Phone, Zap, Crown, Gift, Trash2,
-  Pencil
+  Pencil, Image as ImageIcon
 } from 'lucide-react'
 import api from '../../services/api'
 import { Btn, Badge, Modal, Input, Select, Spinner, StatCard } from '../../components/ui'
@@ -11,25 +11,34 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 const adminApi = {
-  agents:      ()           => api.get('/api/admin/agents'),
-  stats:       ()           => api.get('/api/admin/stats'),
-  toggle:      (id)         => api.put(`/api/admin/agents/${id}/toggle`),
-  setPlan:     (id, data)   => api.put(`/api/admin/agents/${id}/plan`, data),
-  addAgent:    (data)       => api.post('/api/admin/agents', data),
-  sendReport:  ()           => api.post('/api/admin/report'),
+  agents: () => api.get('/api/admin/agents'),
+  stats: () => api.get('/api/admin/stats'),
+  toggle: (id) => api.put(`/api/admin/agents/${id}/toggle`),
+  setPlan: (id, data) => api.put(`/api/admin/agents/${id}/plan`, data),
+  addAgent: (data) => api.post('/api/admin/agents', data),
+  sendReport: () => api.post('/api/admin/report'),
 
-  banners:     ()           => api.get('/api/banners/admin/all'),
-  addBanner:   (data)       => api.post('/api/banners', data),
-  editBanner:  (id, data)   => api.put(`/api/banners/${id}`, data),
-  delBanner:   (id)         => api.delete(`/api/banners/${id}`),
-  togBanner:   (id, active) => api.put(`/api/banners/${id}`, { is_active: active }),
+  banners: () => api.get('/api/banners/admin/all'),
+  addBanner: (data) => api.post('/api/banners', data),
+  editBanner: (id, data) => api.put(`/api/banners/${id}`, data),
+  delBanner: (id) => api.delete(`/api/banners/${id}`),
+  togBanner: (id, active) => api.put(`/api/banners/${id}`, { is_active: active }),
+
+  uploadBanner: (file) => {
+    const formData = new FormData()
+    formData.append('image', file)
+
+    return api.post('/api/banners/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
 }
 
 const STATUS_COLORS = {
-  pro:        { color: 'gold',  label: 'Pro',        icon: Crown  },
-  corporate: { color: 'blue',  label: 'Korporativ', icon: Shield },
-  trial:     { color: 'green', label: 'Sinov',      icon: Gift   },
-  expired:   { color: 'red',   label: 'Tugagan',    icon: XCircle},
+  pro: { color: 'gold', label: 'Pro', icon: Crown },
+  corporate: { color: 'blue', label: 'Korporativ', icon: Shield },
+  trial: { color: 'green', label: 'Sinov', icon: Gift },
+  expired: { color: 'red', label: 'Tugagan', icon: XCircle },
 }
 
 const emptyBannerForm = {
@@ -55,6 +64,7 @@ export default function AdminPanel() {
   const [banners, setBanners] = useState([])
   const [bannerForm, setBannerForm] = useState(emptyBannerForm)
   const [editingBanner, setEditingBanner] = useState(null)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
 
   const load = async () => {
     setLoading(true)
@@ -76,7 +86,9 @@ export default function AdminPanel() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   const handleToggle = async (id) => {
     try {
@@ -92,9 +104,7 @@ export default function AdminPanel() {
     setReporting(true)
     try {
       const { data } = await adminApi.sendReport()
-      toast.success(data.report_sent
-        ? '✅ Hisobot Telegram ga yuborildi!'
-        : '✅ Hisobot tayyorlandi')
+      toast.success(data.report_sent ? '✅ Hisobot Telegram ga yuborildi!' : '✅ Hisobot tayyorlandi')
     } catch {
       toast.error('Xato')
     } finally {
@@ -105,6 +115,33 @@ export default function AdminPanel() {
   const resetBannerForm = () => {
     setBannerForm(emptyBannerForm)
     setEditingBanner(null)
+  }
+
+  const handleBannerImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      return toast.error('Faqat rasm yuklash mumkin')
+    }
+
+    setUploadingBanner(true)
+
+    try {
+      const { data } = await adminApi.uploadBanner(file)
+
+      setBannerForm(f => ({
+        ...f,
+        image_url: data.image_url,
+      }))
+
+      toast.success('Rasm yuklandi!')
+    } catch (err) {
+      console.error(err)
+      toast.error(err.response?.data?.error || 'Rasm yuklashda xato')
+    } finally {
+      setUploadingBanner(false)
+    }
   }
 
   const saveBanner = async () => {
@@ -166,7 +203,6 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-5 max-w-5xl">
-
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -226,10 +262,7 @@ export default function AdminPanel() {
           </h2>
 
           {editingBanner && (
-            <button
-              onClick={resetBannerForm}
-              className="text-xs text-gray-500 hover:text-cherry-700"
-            >
+            <button onClick={resetBannerForm} className="text-xs text-gray-500 hover:text-cherry-700">
               Bekor qilish
             </button>
           )}
@@ -251,18 +284,41 @@ export default function AdminPanel() {
           />
 
           <input
-            placeholder="Tayyor reklama rasmi URL"
-            value={bannerForm.image_url}
-            onChange={e => setBannerForm(f => ({ ...f, image_url: e.target.value }))}
-            className="input sm:col-span-2"
-          />
-
-          <input
             placeholder="Link: https://..."
             value={bannerForm.link_url}
             onChange={e => setBannerForm(f => ({ ...f, link_url: e.target.value }))}
             className="input sm:col-span-2"
           />
+
+          <div className="sm:col-span-2">
+            <label className="text-xs text-gray-500 mb-1 block">
+              Reklama banner rasmi
+            </label>
+
+            <label className="border border-dashed border-cherry-200 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-cherry-50 transition">
+              <ImageIcon size={22} className="text-cherry-700" />
+              <span className="text-sm font-medium text-gray-700">
+                {uploadingBanner ? 'Rasm yuklanmoqda...' : 'Rasm tanlash'}
+              </span>
+              <span className="text-xs text-gray-400">
+                Tavsiya: 1200×400 px, JPG yoki PNG
+              </span>
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleBannerImageUpload}
+                className="hidden"
+                disabled={uploadingBanner}
+              />
+            </label>
+
+            {bannerForm.image_url && (
+              <p className="text-xs text-green-600 mt-1">
+                ✅ Rasm yuklandi
+              </p>
+            )}
+          </div>
 
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Boshlanish vaqti</label>
@@ -286,7 +342,7 @@ export default function AdminPanel() {
         </div>
 
         {bannerForm.image_url ? (
-          <div className="mb-3 rounded-xl overflow-hidden border border-cherry-100">
+          <div className="mb-3 rounded-xl overflow-hidden border border-cherry-100 bg-white">
             <img
               src={bannerForm.image_url}
               alt="Banner preview"
@@ -327,7 +383,7 @@ export default function AdminPanel() {
             className="input w-24"
           />
 
-          <Btn size="sm" onClick={saveBanner}>
+          <Btn size="sm" onClick={saveBanner} disabled={uploadingBanner}>
             <Plus size={14} />
             {editingBanner ? 'Saqlash' : "Qo'shish"}
           </Btn>
@@ -370,9 +426,7 @@ export default function AdminPanel() {
                       setBanners(Array.isArray(res.data) ? res.data : [])
                     }}
                     className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                      b.is_active
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-500'
+                      b.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                     }`}
                   >
                     {b.is_active ? 'Faol' : 'Nofaol'}
@@ -419,9 +473,7 @@ export default function AdminPanel() {
             onClick={() => setFilter(f.key)}
             className={clsx(
               'px-3 py-1.5 rounded-xl text-xs font-medium transition-all',
-              filter === f.key
-                ? 'bg-cherry-700 text-white'
-                : 'text-gray-500 hover:text-cherry-700'
+              filter === f.key ? 'bg-cherry-700 text-white' : 'text-gray-500 hover:text-cherry-700'
             )}
           >
             {f.label}
@@ -467,10 +519,10 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
   const StatusIcon = st.icon
 
   const daysColor =
-    a.days_left === 0  ? 'text-red-600 bg-red-50' :
-    a.days_left <= 3   ? 'text-amber-600 bg-amber-50' :
-    a.days_left <= 7   ? 'text-orange-500 bg-orange-50' :
-                         'text-green-600 bg-green-50'
+    a.days_left === 0 ? 'text-red-600 bg-red-50' :
+    a.days_left <= 3 ? 'text-amber-600 bg-amber-50' :
+    a.days_left <= 7 ? 'text-orange-500 bg-orange-50' :
+    'text-green-600 bg-green-50'
 
   return (
     <div className={clsx(
@@ -512,16 +564,15 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
 
           <div className="flex items-center gap-3 mt-2 flex-wrap">
             <span className={clsx('text-xs font-medium px-2 py-0.5 rounded-lg', daysColor)}>
-              {a.days_left === 0
-                ? '⛔ Muddati tugagan'
-                : `⏱ ${a.days_left} kun qoldi`
-              }
+              {a.days_left === 0 ? '⛔ Muddati tugagan' : `⏱ ${a.days_left} kun qoldi`}
             </span>
+
             {a.trial_end && a.subscription_status === 'trial' && (
               <span className="text-xs text-gray-400">
                 Sinov tugaydi: {fmtDate(a.trial_end)}
               </span>
             )}
+
             {a.plan_end && ['pro', 'corporate'].includes(a.plan) && (
               <span className="text-xs text-gray-400">
                 Tarif tugaydi: {fmtDate(a.plan_end)}
@@ -534,6 +585,7 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
           <Btn variant="outline" size="sm" onClick={onPlan}>
             <Crown size={13} /> Tarif
           </Btn>
+
           <Btn variant={a.is_active ? 'outline' : 'primary'} size="sm" onClick={onToggle}>
             {a.is_active
               ? <><XCircle size={13} /> O'chirish</>
@@ -582,8 +634,7 @@ function PlanModal({ open, agent, onClose, onSaved }) {
           </div>
         </div>
 
-        <Select label="Yangi tarif" value={form.plan}
-          onChange={e => setForm(p => ({ ...p, plan: e.target.value }))}>
+        <Select label="Yangi tarif" value={form.plan} onChange={e => setForm(p => ({ ...p, plan: e.target.value }))}>
           <option value="trial">🎁 Sinov</option>
           <option value="pro">⭐ Pro</option>
           <option value="corporate">🏢 Korporativ</option>
@@ -612,15 +663,23 @@ function PlanModal({ open, agent, onClose, onSaved }) {
 
 function AddAgentModal({ open, onClose, onSaved }) {
   const [form, setForm] = useState({
-    login: '', password: '', full_name: '', phone: '', plan: '', days: '30'
+    login: '',
+    password: '',
+    full_name: '',
+    phone: '',
+    plan: '',
+    days: '30',
   })
+
   const [loading, setLoading] = useState(false)
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
   const submit = async (e) => {
     e.preventDefault()
     if (!form.login || !form.password) return toast.error('Login va parol kerak')
+
     setLoading(true)
+
     try {
       await adminApi.addAgent(form)
       toast.success("Agent qo'shildi!")
@@ -637,30 +696,51 @@ function AddAgentModal({ open, onClose, onSaved }) {
     <Modal open={open} onClose={onClose} title="Yangi agent qo'shish" size="md">
       <form onSubmit={submit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Input label="To'liq ism" value={form.full_name}
-            onChange={e => set('full_name', e.target.value)} placeholder="Sardor Rahimov" />
-          <Input label="Telefon" value={form.phone}
-            onChange={e => set('phone', e.target.value)} placeholder="+998 90 123 45 67" />
+          <Input
+            label="To'liq ism"
+            value={form.full_name}
+            onChange={e => set('full_name', e.target.value)}
+            placeholder="Sardor Rahimov"
+          />
+
+          <Input
+            label="Telefon"
+            value={form.phone}
+            onChange={e => set('phone', e.target.value)}
+            placeholder="+998 90 123 45 67"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Login *" value={form.login}
+          <Input
+            label="Login *"
+            value={form.login}
             onChange={e => set('login', e.target.value.toLowerCase())}
-            placeholder="sardor" />
-          <Input label="Parol *" type="password" value={form.password}
-            onChange={e => set('password', e.target.value)} placeholder="••••••••" />
+            placeholder="sardor"
+          />
+
+          <Input
+            label="Parol *"
+            type="password"
+            value={form.password}
+            onChange={e => set('password', e.target.value)}
+            placeholder="••••••••"
+          />
         </div>
 
-        <Select label="Tarif" value={form.plan}
-          onChange={e => set('plan', e.target.value)}>
+        <Select label="Tarif" value={form.plan} onChange={e => set('plan', e.target.value)}>
           <option value="">Sinov 14 kun</option>
           <option value="pro">Pro</option>
           <option value="corporate">Korporativ</option>
         </Select>
 
         {form.plan && (
-          <Input label="Necha kun" type="number" value={form.days}
-            onChange={e => set('days', e.target.value)} />
+          <Input
+            label="Necha kun"
+            type="number"
+            value={form.days}
+            onChange={e => set('days', e.target.value)}
+          />
         )}
 
         <div className="flex gap-2">
