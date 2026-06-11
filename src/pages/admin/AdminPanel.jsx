@@ -11,12 +11,12 @@ import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 const adminApi = {
-  agents:      ()           => api.get('/admin/agents'),
-  stats:       ()           => api.get('/admin/stats'),
-  toggle:      (id)         => api.put(`/admin/agents/${id}/toggle`),
-  setPlan:     (id, data)   => api.put(`/admin/agents/${id}/plan`, data),
-  addAgent:    (data)       => api.post('/admin/agents', data),
-  sendReport:  ()           => api.post('/admin/report'),
+  agents:      ()           => api.get('/api/admin/agents'),
+  stats:       ()           => api.get('/api/admin/stats'),
+  toggle:      (id)         => api.put(`/api/admin/agents/${id}/toggle`),
+  setPlan:     (id, data)   => api.put(`/api/admin/agents/${id}/plan`, data),
+  addAgent:    (data)       => api.post('/api/admin/agents', data),
+  sendReport:  ()           => api.post('/api/admin/report'),
 }
 
 const STATUS_COLORS = {
