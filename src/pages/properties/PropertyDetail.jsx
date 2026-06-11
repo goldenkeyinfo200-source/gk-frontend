@@ -234,9 +234,16 @@ export default function PropertyDetail() {
           {!isOwn && (
             <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-3">
               <Lock size={14} className="text-amber-600 flex-shrink-0" />
-              <p className="text-xs text-amber-700">
+              <p className="text-xs text-amber-700 flex-1">
                 Boshqa agentning obyekti. Mulkdor va aniq manzil yashirin.
               </p>
+              {p.agent_phone && (
+                <a href={`tel:${p.agent_phone}`} className="flex-shrink-0">
+                  <Btn size="sm">
+                    <Phone size={12} /> {p.agent_name || 'Agent'}
+                  </Btn>
+                </a>
+              )}
             </div>
           )}
 
@@ -353,9 +360,17 @@ export default function PropertyDetail() {
                       </a>
                     )
                   ) : (
-                    <Badge color="gray">
-                      <Lock size={10} /> Boshqa agent
-                    </Badge>
+                    c.agent_phone ? (
+                      <a href={`tel:${c.agent_phone}`}>
+                        <Btn size="sm" variant="outline">
+                          <Phone size={12} /> {c.agent_name || 'Agent'}
+                        </Btn>
+                      </a>
+                    ) : (
+                      <Badge color="gray">
+                        <Lock size={10} /> Boshqa agent
+                      </Badge>
+                    )
                   )}
                 </div>
               </div>
