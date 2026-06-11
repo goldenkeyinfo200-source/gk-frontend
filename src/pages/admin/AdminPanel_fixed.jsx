@@ -40,13 +40,22 @@ export default function AdminPanel() {
   const [addModal, setAddModal] = useState(false)
   const [reporting, setReporting] = useState(false)
 
+  // Reklama bannerlar uchun state
+  const [banners, setBanners] = useState([])
+  const [bannerForm, setBannerForm] = useState({
+    company: '',
+    slogan: '',
+    color: '#8B1A2B',
+    link_url: '',
+  })
+
   const load = async () => {
     setLoading(true)
     try {
       const [a, s, b] = await Promise.all([adminApi.agents(), adminApi.stats(), adminApi.banners()])
-      setAgents(a.data)
-      setStats(s.data)
-      setBanners(b.data || [])
+      setAgents(Array.isArray(a.data) ? a.data : [])
+      setStats(s.data || null)
+      setBanners(Array.isArray(b.data) ? b.data : [])
     } catch (err) {
       toast.error('Yuklashda xato')
     } finally {
