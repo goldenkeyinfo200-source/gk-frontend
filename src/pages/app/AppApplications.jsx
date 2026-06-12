@@ -53,7 +53,7 @@ export default function AppApplications() {
         <div className="text-center py-16">
           <List size={40} className="text-gray-200 mx-auto mb-3" />
           <p className="text-gray-500 text-sm">Arizalar yo'q</p>
-          <button onClick={() => navigate('/')}
+          <button onClick={() => navigate('/app')}
             className="mt-3 text-cherry-700 text-sm font-medium underline">
             Obyektlarni ko'rish
           </button>

@@ -198,7 +198,7 @@ export default function AppHome() {
         ) : (
           <div className="space-y-3">
             {properties.map(p => (
-              <PropertyCard key={p.id} property={p} onClick={() => navigate(`/property/${p.id}`)} />
+              <PropertyCard key={p.id} property={p} onClick={() => navigate(`/app/property/${p.id}`)} />
             ))}
 
             {properties.length < total && (
