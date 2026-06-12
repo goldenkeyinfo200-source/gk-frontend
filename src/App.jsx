@@ -12,6 +12,7 @@ import Leads from './pages/leads/Leads'
 import AdminPanel from './pages/admin/AdminPanel'
 import Profile from './pages/profile/Profile'
 import './styles/global.css'
+import ClientApp from './pages/app/ClientApp'
 
 function PrivateRoute({ children }) {
   const { token } = useAuthStore()
@@ -81,6 +82,8 @@ export default function App() {
             }
           />
         </Route>
+
+        <Route path="/app/*" element={<ClientApp />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
