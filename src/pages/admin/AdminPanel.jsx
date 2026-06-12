@@ -495,6 +495,7 @@ export default function AdminPanel() {
               agent={a}
               onToggle={() => handleToggle(a.id)}
               onPlan={() => setPlanModal(a)}
+              onTelegram={() => setTelegramModal(a)}
             />
           ))}
         </div>
