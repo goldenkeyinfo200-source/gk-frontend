@@ -17,6 +17,7 @@ const adminApi = {
   setPlan: (id, data) => api.put(`/api/admin/agents/${id}/plan`, data),
   addAgent: (data) => api.post('/api/admin/agents', data),
   sendReport: () => api.post('/api/admin/report'),
+  setTelegramId: (id, telegram_id) => api.put(`/api/admin/agents/${id}/telegram`, { telegram_id }),
 
   banners: () => api.get('/api/banners/admin/all'),
   addBanner: (data) => api.post('/api/banners', data),
@@ -60,6 +61,7 @@ export default function AdminPanel() {
   const [planModal, setPlanModal] = useState(null)
   const [addModal, setAddModal] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const [telegramModal, setTelegramModal] = useState(null)
 
   const [banners, setBanners] = useState([])
   const [bannerForm, setBannerForm] = useState(emptyBannerForm)
@@ -498,6 +500,13 @@ export default function AdminPanel() {
         </div>
       )}
 
+      <TelegramLinkModal
+        open={!!telegramModal}
+        agent={telegramModal}
+        onClose={() => setTelegramModal(null)}
+        onSaved={() => { setTelegramModal(null); load() }}
+      />
+
       <PlanModal
         open={!!planModal}
         agent={planModal}
@@ -514,7 +523,7 @@ export default function AdminPanel() {
   )
 }
 
-function AgentCard({ agent: a, onToggle, onPlan }) {
+function AgentCard({ agent: a, onToggle, onPlan, onTelegram }) {
   const st = STATUS_COLORS[a.subscription_status] || STATUS_COLORS.expired
   const StatusIcon = st.icon
 
@@ -558,7 +567,7 @@ function AgentCard({ agent: a, onToggle, onPlan }) {
             <span>{a.clients_count} mijoz · {a.props_count} ob'yekt</span>
             {a.telegram_id
               ? <span className="text-blue-500">✓ Telegram ulangan</span>
-              : <span className="text-gray-400">Telegram yo'q</span>
+              : <button onClick={onTelegram} className="text-xs text-amber-500 hover:text-amber-700 underline transition-colors">⚠ Telegram yo'q — bog'lash</button>
             }
           </div>
 
@@ -747,6 +756,55 @@ function AddAgentModal({ open, onClose, onSaved }) {
           <Btn type="button" variant="outline" onClick={onClose} className="flex-1">Bekor</Btn>
           <Btn type="submit" loading={loading} className="flex-1">
             <Plus size={14} /> Qo'shish
+          </Btn>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+function TelegramLinkModal({ open, agent, onClose, onSaved }) {
+  const [telegramId, setTelegramId] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    const tid = telegramId.trim()
+    if (!tid) return toast.error('Telegram ID kiriting')
+    if (isNaN(Number(tid))) return toast.error("Telegram ID faqat raqamlardan iborat bo'lishi kerak")
+    setLoading(true)
+    try {
+      await adminApi.setTelegramId(agent.id, Number(tid))
+      toast.success('Telegram ID saqlandi!')
+      setTelegramId('')
+      onSaved()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Xato')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!agent) return null
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Telegram bog'lash — ${agent.full_name || agent.login}`} size="sm">
+      <form onSubmit={submit} className="space-y-4">
+        <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700 space-y-1">
+          <p className="font-medium">Telegram ID qanday topiladi?</p>
+          <p>1. @userinfobot ga istalgan xabar yozsin</p>
+          <p>2. Bot "Id: <b>123456789</b>" ko'rinishida javob beradi</p>
+          <p>3. Shu raqamni quyiga kiriting</p>
+        </div>
+        <Input
+          label="Telegram ID (faqat raqam)"
+          value={telegramId}
+          onChange={e => setTelegramId(e.target.value.replace(/\D/g, ''))}
+          placeholder="123456789"
+        />
+        <div className="flex gap-2">
+          <Btn type="button" variant="outline" onClick={onClose} className="flex-1">Bekor</Btn>
+          <Btn type="submit" loading={loading} className="flex-1">
+            <CheckCircle size={14} /> Saqlash
           </Btn>
         </div>
       </form>
