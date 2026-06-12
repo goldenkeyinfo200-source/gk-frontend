@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react'
-import { Routes, Route, Navigate, useNavigate, useLocation, HashRouter } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation, MemoryRouter } from 'react-router-dom'
 import { Home, List, User } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -67,7 +67,7 @@ export default function ClientApp() {
 
   return (
     <AppContext.Provider value={{ client, login, logout }}>
-      <HashRouter>
+      <MemoryRouter>
         {!client ? (
           <AppAuth />
         ) : (
@@ -82,7 +82,7 @@ export default function ClientApp() {
             <BottomNav />
           </div>
         )}
-      </HashRouter>
+      </MemoryRouter>
     </AppContext.Provider>
   )
 }
