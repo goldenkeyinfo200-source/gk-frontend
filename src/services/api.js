@@ -28,9 +28,14 @@ api.interceptors.response.use(
 export default api
 
 export const authApi = {
-  login: (data) => api.post('/api/auth/login', data),
-  me: () => api.get('/api/auth/me'),
-  registerPublic: (data) => api.post('/api/auth/register-public', data),
+  login:           (data) => api.post('/api/auth/login', data),
+  me:              ()     => api.get('/api/auth/me'),
+  registerPublic:  (data) => api.post('/api/auth/register-public', data),
+
+  // Parolni tiklash (Telegram bot orqali)
+  forgotPassword:  (data) => api.post('/api/auth/forgot-password', data),
+  verifyResetCode: (data) => api.post('/api/auth/verify-reset-code', data),
+  resetPassword:   (data) => api.post('/api/auth/reset-password', data),
 }
 
 export const clientsApi = {
