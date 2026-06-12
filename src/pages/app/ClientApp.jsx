@@ -81,7 +81,6 @@ export default function ClientApp() {
             <BottomNav />
           </div>
         )}
-      </MemoryRouter>
     </AppContext.Provider>
   )
 }
