@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react'
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation, HashRouter } from 'react-router-dom'
 import { Home, List, User } from 'lucide-react'
 import clsx from 'clsx'
 
@@ -67,20 +67,22 @@ export default function ClientApp() {
 
   return (
     <AppContext.Provider value={{ client, login, logout }}>
-      {!client ? (
-        <AppAuth />
-      ) : (
-        <div className="min-h-screen bg-[#f8f5f5] pb-20">
-          <Routes>
-            <Route path="/"          element={<AppHome />} />
-            <Route path="/property/:id" element={<AppPropertyDetail />} />
-            <Route path="/applications" element={<AppApplications />} />
-            <Route path="/profile"   element={<AppProfile />} />
-            <Route path="*"          element={<Navigate to="/" replace />} />
-          </Routes>
-          <BottomNav />
-        </div>
-      )}
+      <HashRouter>
+        {!client ? (
+          <AppAuth />
+        ) : (
+          <div className="min-h-screen bg-[#f8f5f5] pb-20">
+            <Routes>
+              <Route path="/"          element={<AppHome />} />
+              <Route path="/property/:id" element={<AppPropertyDetail />} />
+              <Route path="/applications" element={<AppApplications />} />
+              <Route path="/profile"   element={<AppProfile />} />
+              <Route path="*"          element={<Navigate to="/" replace />} />
+            </Routes>
+            <BottomNav />
+          </div>
+        )}
+      </HashRouter>
     </AppContext.Provider>
   )
 }

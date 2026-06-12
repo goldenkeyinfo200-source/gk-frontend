@@ -83,7 +83,7 @@ export default function App() {
           />
         </Route>
 
-        <Route path="/app/*" element={<ClientApp />} />
+        <Route path="/app" element={<ClientApp />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
