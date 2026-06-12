@@ -67,20 +67,19 @@ export default function ClientApp() {
 
   return (
     <AppContext.Provider value={{ client, login, logout }}>
-      {!client ? (
-          <AppAuth />
+      <Routes>
+        {!client ? (
+          <Route path="*" element={<AppAuth />} />
         ) : (
-          <div className="min-h-screen bg-[#f8f5f5] pb-20">
-            <Routes>
-              <Route path="/app"              element={<AppHome />} />
-              <Route path="/app/property/:id" element={<AppPropertyDetail />} />
-              <Route path="/app/applications" element={<AppApplications />} />
-              <Route path="/app/profile"      element={<AppProfile />} />
-              <Route path="*"                 element={<Navigate to="/app" replace />} />
-            </Routes>
-            <BottomNav />
-          </div>
+          <>
+            <Route path="/app"              element={<><AppHome /><BottomNav /></>} />
+            <Route path="/app/property/:id" element={<><AppPropertyDetail /><BottomNav /></>} />
+            <Route path="/app/applications" element={<><AppApplications /><BottomNav /></>} />
+            <Route path="/app/profile"      element={<><AppProfile /><BottomNav /></>} />
+            <Route path="*"                 element={<Navigate to="/app" replace />} />
+          </>
         )}
+      </Routes>
     </AppContext.Provider>
   )
 }
