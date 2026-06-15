@@ -1,9 +1,8 @@
 import { useState, useEffect, createContext, useContext } from 'react'
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Home, List, User } from 'lucide-react'
 import clsx from 'clsx'
 
-// Pages
 import AppAuth from './AppAuth'
 import AppHome from './AppHome'
 import AppPropertyDetail from './AppPropertyDetail'
@@ -31,16 +30,64 @@ export async function appFetch(path, options = {}) {
   return data
 }
 
+// ─── Simple page router (no nested router) ────────────────
+function AppRouter({ client }) {
+  const location = useLocation()
+  const path = location.pathname
+
+  if (!client) return <AppAuth />
+
+  if (path.startsWith('/app/property/')) {
+    const id = path.replace('/app/property/', '')
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8f5f5', paddingBottom: 80 }}>
+        <AppPropertyDetail id={id} />
+        <BottomNav />
+      </div>
+    )
+  }
+
+  if (path === '/app/applications') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8f5f5', paddingBottom: 80 }}>
+        <AppApplications />
+        <BottomNav />
+      </div>
+    )
+  }
+
+  if (path === '/app/profile') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8f5f5', paddingBottom: 80 }}>
+        <AppProfile />
+        <BottomNav />
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f8f5f5', paddingBottom: 80 }}>
+      <AppHome />
+      <BottomNav />
+    </div>
+  )
+}
+
 // ─── Main App ─────────────────────────────────────────────
 export default function ClientApp() {
   const [client, setClient] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('gk_app_token')
-    const saved = localStorage.getItem('gk_app_client')
-    if (token && saved) {
-      setClient(JSON.parse(saved))
+    try {
+      const token = localStorage.getItem('gk_app_token')
+      const saved = localStorage.getItem('gk_app_client')
+      if (token && saved) {
+        setClient(JSON.parse(saved))
+      }
+    } catch (e) {
+      localStorage.removeItem('gk_app_token')
+      localStorage.removeItem('gk_app_client')
     }
     setLoading(false)
   }, [])
@@ -59,27 +106,16 @@ export default function ClientApp() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f5f5] flex items-center justify-center">
-        <div className="w-8 h-8 border-3 border-cherry-200 border-t-cherry-700 rounded-full animate-spin" />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f5f5' }}>
+        <div style={{ width: 32, height: 32, border: '3px solid #e8d8db', borderTopColor: '#7a1a2e', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       </div>
     )
   }
 
   return (
     <AppContext.Provider value={{ client, login, logout }}>
-      <Routes>
-        {!client ? (
-          <Route path="*" element={<AppAuth />} />
-        ) : (
-          <>
-            <Route path="/app"              element={<><AppHome /><BottomNav /></>} />
-            <Route path="/app/property/:id" element={<><AppPropertyDetail /><BottomNav /></>} />
-            <Route path="/app/applications" element={<><AppApplications /><BottomNav /></>} />
-            <Route path="/app/profile"      element={<><AppProfile /><BottomNav /></>} />
-            <Route path="*"                 element={<Navigate to="/app" replace />} />
-          </>
-        )}
-      </Routes>
+      <AppRouter client={client} />
     </AppContext.Provider>
   )
 }
@@ -90,23 +126,24 @@ function BottomNav() {
   const navigate = useNavigate()
 
   const tabs = [
-    { path: '/app',         icon: Home,   label: 'Bosh sahifa' },
-    { path: '/app/applications', icon: List, label: 'Arizalarim' },
-    { path: '/app/profile', icon: User,   label: 'Profil'      },
+    { path: '/app',              icon: Home, label: 'Bosh sahifa' },
+    { path: '/app/applications', icon: List, label: 'Arizalarim'  },
+    { path: '/app/profile',      icon: User, label: 'Profil'      },
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-cherry-100 flex z-50 safe-area-pb">
+    <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff', borderTop: '1px solid #f0e0e3', display: 'flex', zIndex: 50 }}>
       {tabs.map(t => {
-        const active = location.pathname === t.path
+        const active = location.pathname === t.path || (t.path === '/app' && location.pathname === '/app')
         return (
           <button
             key={t.path}
             onClick={() => navigate(t.path)}
-            className={clsx(
-              'flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors',
-              active ? 'text-cherry-700' : 'text-gray-400'
-            )}
+            style={{
+              flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: 4, padding: '10px 0 14px', fontSize: 11, fontWeight: 500,
+              color: active ? '#7a1a2e' : '#aaa', border: 'none', background: 'none', cursor: 'pointer'
+            }}
           >
             <t.icon size={20} strokeWidth={active ? 2.5 : 1.8} />
             {t.label}

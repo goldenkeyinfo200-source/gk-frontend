@@ -9,8 +9,9 @@ const TYPE_UZ = {
   office: 'Ofis', land: 'Yer (Arsa)', commercial: 'Noturar joy',
 }
 
-export default function AppPropertyDetail() {
-  const { id } = useParams()
+export default function AppPropertyDetail({ id: propId }) {
+  const params = useParams()
+  const id = propId || params.id
   const navigate = useNavigate()
   const [property, setProperty] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -21,7 +22,7 @@ export default function AppPropertyDetail() {
   useEffect(() => {
     appFetch(`/api/app/properties/${id}`)
       .then(setProperty)
-      .catch(() => navigate('/'))
+      .catch(() => navigate('/app'))
       .finally(() => setLoading(false))
   }, [id])
 
