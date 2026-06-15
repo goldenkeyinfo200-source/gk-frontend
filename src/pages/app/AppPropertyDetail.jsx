@@ -202,50 +202,56 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-      <div className="bg-white w-full rounded-t-3xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">Ariza qoldirish</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:50, display:'flex', alignItems:'flex-end' }}>
+      <div style={{ background:'#fff', width:'100%', borderRadius:'24px 24px 0 0', padding:20, maxHeight:'80vh', overflowY:'auto', display:'flex', flexDirection:'column', gap:12 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <span style={{ fontWeight:600, fontSize:15 }}>Ariza qoldirish</span>
+          <button onClick={onClose} style={{ color:'#aaa', fontSize:18, background:'none', border:'none', cursor:'pointer' }}>✕</button>
         </div>
 
-        <div className="bg-cherry-50 rounded-xl px-3 py-2 text-sm text-gray-700">
+        <div style={{ background:'#fef1f3', borderRadius:10, padding:'8px 12px', fontSize:13, color:'#555' }}>
           🏠 {p.display_id} · {p.purpose === 'sell' ? 'Sotiladi' : 'Ijaraga'}
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 mb-2">Maqsadingiz:</p>
-          <div className="space-y-2">
+          <p style={{ fontSize:11, color:'#999', marginBottom:8 }}>Maqsadingiz:</p>
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {typeOptions.map(t => (
-              <label key={t.key} className={clsx(
-                'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all',
-                type === t.key ? 'border-cherry-400 bg-cherry-50' : 'border-gray-100'
-              )}>
-                <input type="radio" name="type" value={t.key} checked={type === t.key}
-                  onChange={() => setType(t.key)} className="accent-cherry-700" />
-                <span className="text-sm font-medium text-gray-700">{t.label}</span>
+              <label key={t.key} onClick={() => setType(t.key)} style={{
+                display:'flex', alignItems:'center', gap:12, padding:'10px 12px',
+                borderRadius:10, border: type === t.key ? '1.5px solid #c62828' : '1px solid #eee',
+                background: type === t.key ? '#fef1f3' : '#fff', cursor:'pointer'
+              }}>
+                <div style={{
+                  width:18, height:18, borderRadius:'50%', border: type === t.key ? '5px solid #7a1a2e' : '2px solid #ccc',
+                  flexShrink:0
+                }} />
+                <span style={{ fontSize:13, fontWeight:500, color:'#333' }}>{t.label}</span>
               </label>
             ))}
           </div>
         </div>
 
         <div>
-          <p className="text-xs text-gray-500 mb-1">Izoh (ixtiyoriy)</p>
-          <textarea
+          <p style={{ fontSize:11, color:'#999', marginBottom:4 }}>Izoh (ixtiyoriy)</p>
+          <input
+            type="text"
             value={message}
             onChange={e => setMessage(e.target.value)}
             placeholder="Qo'shimcha ma'lumot..."
-            rows={3}
-            className="w-full border border-cherry-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-cherry-400 resize-none"
+            style={{ width:'100%', border:'1px solid #e8d8db', borderRadius:10, padding:'10px 12px', fontSize:13, outline:'none', boxSizing:'border-box' }}
           />
         </div>
 
-        {error && <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-xl">{error}</p>}
+        {error && <p style={{ fontSize:12, color:'#e53e3e', background:'#fff5f5', padding:'8px 12px', borderRadius:10 }}>{error}</p>}
 
-        <button onClick={submit} disabled={loading}
-          className="w-full bg-cherry-700 text-white font-semibold rounded-xl py-3 text-sm disabled:opacity-60 flex items-center justify-center">
+        <button onClick={submit} disabled={loading} style={{
+          width:'100%', background: loading ? '#c08090' : '#7a1a2e', color:'#fff',
+          fontWeight:600, borderRadius:12, padding:'14px 0', fontSize:14,
+          border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'
+        }}>
           {loading
-            ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            ? <span style={{ width:16, height:16, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', display:'inline-block', animation:'spin 0.8s linear infinite' }} />
             : 'Ariza yuborish'
           }
         </button>
