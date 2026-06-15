@@ -250,7 +250,6 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
       </div>
     </div>
 
-    {/* Tugma ekran pastida fixed */}
     <div style={{ position:'fixed', bottom:0, left:0, right:0, padding:'12px 16px 28px', background:'#fff', borderTop:'1px solid #f0e0e3', zIndex:100 }}>
       <button onClick={submit} disabled={loading} style={{
         width:'100%', background: loading ? '#c08090' : '#7a1a2e', color:'#fff',
