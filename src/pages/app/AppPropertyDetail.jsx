@@ -203,7 +203,8 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:50, display:'flex', alignItems:'flex-end' }}>
-      <div style={{ background:'#fff', width:'100%', borderRadius:'24px 24px 0 0', padding:20, maxHeight:'80vh', overflowY:'auto', display:'flex', flexDirection:'column', gap:12 }}>
+      <div style={{ background:'#fff', width:'100%', borderRadius:'24px 24px 0 0', maxHeight:'85vh', display:'flex', flexDirection:'column' }}>
+      <div style={{ padding:20, overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:12 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <span style={{ fontWeight:600, fontSize:15 }}>Ariza qoldirish</span>
           <button onClick={onClose} style={{ color:'#aaa', fontSize:18, background:'none', border:'none', cursor:'pointer' }}>✕</button>
@@ -244,7 +245,10 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
         </div>
 
         {error && <p style={{ fontSize:12, color:'#e53e3e', background:'#fff5f5', padding:'8px 12px', borderRadius:10 }}>{error}</p>}
+      </div>
 
+      {/* Tugma har doim pastda ko'rinadi */}
+      <div style={{ padding:'12px 20px 24px', borderTop:'1px solid #f5eaec', background:'#fff' }}>
         <button onClick={submit} disabled={loading} style={{
           width:'100%', background: loading ? '#c08090' : '#7a1a2e', color:'#fff',
           fontWeight:600, borderRadius:12, padding:'14px 0', fontSize:14,
@@ -255,6 +259,7 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
             : 'Ariza yuborish'
           }
         </button>
+      </div>
       </div>
     </div>
   )
