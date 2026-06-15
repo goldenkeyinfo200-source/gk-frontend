@@ -202,6 +202,7 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
   }
 
   return (
+    <>
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:50, display:'flex', alignItems:'flex-end' }}>
       <div style={{ background:'#fff', width:'100%', borderRadius:'24px 24px 0 0', maxHeight:'85vh', display:'flex', flexDirection:'column' }}>
       <div style={{ padding:20, overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:12 }}>
@@ -262,5 +263,6 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
         }
       </button>
     </div>
+    </>
   )
 }
