@@ -17,6 +17,7 @@ const adminApi = {
   setPlan: (id, data) => api.put(`/api/admin/agents/${id}/plan`, data),
   addAgent: (data) => api.post('/api/admin/agents', data),
   sendReport: () => api.post('/api/admin/report'),
+  clientStats: () => api.get('/api/admin/client-stats'),
   setTelegramId: (id, telegram_id) => api.put(`/api/admin/agents/${id}/telegram`, { telegram_id }),
 
   banners: () => api.get('/api/banners/admin/all'),
@@ -62,6 +63,7 @@ export default function AdminPanel() {
   const [addModal, setAddModal] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [telegramModal, setTelegramModal] = useState(null)
+  const [clientStats, setClientStats] = useState(null)
 
   const [banners, setBanners] = useState([])
   const [bannerForm, setBannerForm] = useState(emptyBannerForm)
@@ -71,15 +73,17 @@ export default function AdminPanel() {
   const load = async () => {
     setLoading(true)
     try {
-      const [a, s, b] = await Promise.all([
+      const [a, s, b, cs] = await Promise.all([
         adminApi.agents(),
         adminApi.stats(),
         adminApi.banners(),
+        adminApi.clientStats().catch(() => ({ data: null })),
       ])
 
       setAgents(Array.isArray(a.data) ? a.data : [])
       setStats(s.data || null)
       setBanners(Array.isArray(b.data) ? b.data : [])
+      setClientStats(cs.data || null)
     } catch (err) {
       console.error(err)
       toast.error('Yuklashda xato')
@@ -254,6 +258,57 @@ export default function AdminPanel() {
               <p className="text-xs text-gray-500 mt-0.5">Yangi lid</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {clientStats && (
+        <div className="card p-4 space-y-3">
+          <p className="text-xs font-medium text-gray-500 flex items-center gap-1.5">
+            <Users size={13} className="text-blue-500" /> Mini App — Mijozlar statistikasi
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+            <div className="bg-blue-50 rounded-2xl p-3">
+              <p className="text-2xl font-bold text-blue-600">{clientStats.total}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Jami mijozlar</p>
+            </div>
+            <div className="bg-green-50 rounded-2xl p-3">
+              <p className="text-2xl font-bold text-green-600">{clientStats.today}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Bugun ro'yxatdan o'tdi</p>
+            </div>
+            <div className="bg-amber-50 rounded-2xl p-3">
+              <p className="text-2xl font-bold text-amber-600">{clientStats.this_week}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Bu hafta</p>
+            </div>
+            <div className="bg-purple-50 rounded-2xl p-3">
+              <p className="text-2xl font-bold text-purple-600">{clientStats.applications}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Jami arizalar</p>
+            </div>
+          </div>
+
+          {clientStats.recent && clientStats.recent.length > 0 && (
+            <div>
+              <p className="text-xs text-gray-400 mb-2">So'nggi ro'yxatdan o'tganlar:</p>
+              <div className="space-y-1.5">
+                {clientStats.recent.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700">
+                        {c.full_name?.[0] || 'M'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{c.full_name}</p>
+                        <p className="text-xs text-gray-400">{c.phone}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">{fmtDate(c.created_at)}</p>
+                      {c.telegram_id && <p className="text-xs text-blue-500">✓ Telegram</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
