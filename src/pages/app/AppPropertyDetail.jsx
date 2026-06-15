@@ -247,20 +247,21 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
         {error && <p style={{ fontSize:12, color:'#e53e3e', background:'#fff5f5', padding:'8px 12px', borderRadius:10 }}>{error}</p>}
       </div>
 
-      {/* Tugma har doim pastda ko'rinadi */}
-      <div style={{ padding:'12px 20px 24px', borderTop:'1px solid #f5eaec', background:'#fff' }}>
-        <button onClick={submit} disabled={loading} style={{
-          width:'100%', background: loading ? '#c08090' : '#7a1a2e', color:'#fff',
-          fontWeight:600, borderRadius:12, padding:'14px 0', fontSize:14,
-          border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'
-        }}>
-          {loading
-            ? <span style={{ width:16, height:16, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', display:'inline-block', animation:'spin 0.8s linear infinite' }} />
-            : 'Ariza yuborish'
-          }
-        </button>
       </div>
-      </div>
+    </div>
+
+    {/* Tugma ekran pastida fixed */}
+    <div style={{ position:'fixed', bottom:0, left:0, right:0, padding:'12px 16px 28px', background:'#fff', borderTop:'1px solid #f0e0e3', zIndex:100 }}>
+      <button onClick={submit} disabled={loading} style={{
+        width:'100%', background: loading ? '#c08090' : '#7a1a2e', color:'#fff',
+        fontWeight:700, borderRadius:14, padding:'16px 0', fontSize:15,
+        border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center'
+      }}>
+        {loading
+          ? <span style={{ width:18, height:18, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', display:'inline-block', animation:'spin 0.8s linear infinite' }} />
+          : '✅ Ariza yuborish'
+        }
+      </button>
     </div>
   )
 }
