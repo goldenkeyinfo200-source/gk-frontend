@@ -203,12 +203,12 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
 
   return (
     <>
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:50, display:'flex', alignItems:'flex-end' }}>
-      <div style={{ background:'#fff', width:'100%', borderRadius:'24px 24px 0 0', maxHeight:'85vh', display:'flex', flexDirection:'column' }}>
+    <div style={{ position:'fixed', inset:0, background:'#fff', zIndex:50, display:'flex', flexDirection:'column' }}>
+      <div style={{ background:'#fff', width:'100%', flex:1, display:'flex', flexDirection:'column' }}>
       <div style={{ padding:20, overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:12 }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <span style={{ fontWeight:600, fontSize:15 }}>Ariza qoldirish</span>
-          <button onClick={onClose} style={{ color:'#aaa', fontSize:18, background:'none', border:'none', cursor:'pointer' }}>✕</button>
+        <div style={{ display:'flex', alignItems:'center', gap:12, paddingBottom:8, borderBottom:'1px solid #f5eaec' }}>
+          <button onClick={onClose} style={{ background:'#f5eaec', border:'none', borderRadius:10, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:18, color:'#7a1a2e' }}>←</button>
+          <span style={{ fontWeight:700, fontSize:17 }}>Ariza qoldirish</span>
         </div>
 
         <div style={{ background:'#fef1f3', borderRadius:10, padding:'8px 12px', fontSize:13, color:'#555' }}>
@@ -251,7 +251,7 @@ function ApplyModal({ property: p, onClose, onSuccess }) {
       </div>
     </div>
 
-    <div style={{ position:'fixed', bottom:70, left:0, right:0, padding:'12px 16px 16px', background:'#fff', borderTop:'1px solid #f0e0e3', zIndex:100 }}>
+    <div style={{ position:'fixed', bottom:0, left:0, right:0, padding:'12px 16px 24px', background:'#fff', borderTop:'1px solid #f0e0e3', zIndex:101 }}>
       <button onClick={submit} disabled={loading} style={{
         width:'100%', background: loading ? '#c08090' : '#7a1a2e', color:'#fff',
         fontWeight:700, borderRadius:14, padding:'16px 0', fontSize:15,
