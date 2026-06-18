@@ -263,6 +263,8 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
   const [features, setFeatures] = useState([]) // tanlangan xususiyatlar
   const [extraNote, setExtraNote] = useState('') // qo'shimcha izoh
   const [files, setFiles]     = useState([])
+  const [existingPhotos, setExistingPhotos] = useState([])
+  const [deletedPhotos, setDeletedPhotos] = useState([])
   const [loading, setLoading] = useState(false)
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -278,6 +280,9 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
 
       setFeatures(savedFeats)
       setExtraNote(noteLine)
+      setExistingPhotos(Array.isArray(property.photos) ? property.photos : [])
+      setDeletedPhotos([])
+      setFiles([])
       setForm({
         purpose:       property.purpose       || 'sell',
         property_type: property.property_type || 'apartment',
@@ -307,6 +312,8 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
       setFeatures([])
       setExtraNote('')
       setFiles([])
+      setExistingPhotos([])
+      setDeletedPhotos([])
     }
   }, [property, open])
 
@@ -330,13 +337,17 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
         description,
       }
 
+      const fd = new FormData()
+      Object.entries(payload).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) fd.append(k, v)
+      })
+      files.forEach(f => fd.append('photos', f))
+
       if (isEdit) {
-        await propertiesApi.update(property.id, payload)
+        fd.append('deletedPhotos', JSON.stringify(deletedPhotos))
+        await propertiesApi.update(property.id, fd)
         toast.success("Ob'yekt yangilandi!")
       } else {
-        const fd = new FormData()
-        Object.entries(payload).forEach(([k, v]) => fd.append(k, v))
-        files.forEach(f => fd.append('photos', f))
         await propertiesApi.create(fd)
         toast.success("Ob'yekt qo'shildi va Telegram ga yuborildi!")
       }
@@ -469,24 +480,77 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
           />
         </div>
 
-        {/* Rasmlar — faqat yangi qo'shishda */}
-        {!isEdit && (
-          <div>
-            <label className="text-xs font-medium text-gray-600 mb-1.5 block">Rasmlar (max 10)</label>
-            <input
-              type="file" multiple accept="image/*"
-              onChange={e => setFiles(Array.from(e.target.files))}
-              className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-medium file:bg-cherry-50 file:text-cherry-700 hover:file:bg-cherry-100"
-            />
-            {files.length > 0 && (
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {files.map((f, i) => (
-                  <img key={i} src={URL.createObjectURL(f)} className="w-14 h-14 rounded-xl object-cover border border-cherry-100" alt="" />
+        {/* Rasmlar */}
+        <div>
+          <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+            Rasmlar (max 10)
+          </label>
+
+          {isEdit && existingPhotos.length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs text-gray-500 mb-2">Mavjud rasmlar:</p>
+              <div className="flex gap-2 flex-wrap">
+                {existingPhotos.map((photo, i) => (
+                  <div key={photo + i} className="relative group/photo">
+                    <img
+                      src={photo}
+                      className="w-20 h-20 rounded-xl object-cover border border-cherry-100"
+                      alt=""
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeletedPhotos(prev => prev.includes(photo) ? prev : [...prev, photo])
+                        setExistingPhotos(prev => prev.filter(p => p !== photo))
+                      }}
+                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-600 text-white text-sm leading-none shadow hover:bg-red-700"
+                      title="Rasmni o'chirish"
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+
+          {isEdit && existingPhotos.length === 0 && (
+            <p className="text-xs text-gray-400 mb-2">Mavjud rasm yo'q</p>
+          )}
+
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={e => setFiles(Array.from(e.target.files || []))}
+            className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-medium file:bg-cherry-50 file:text-cherry-700 hover:file:bg-cherry-100"
+          />
+
+          {files.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs text-gray-500 mb-2">Yangi qo'shiladigan rasmlar:</p>
+              <div className="flex gap-2 flex-wrap">
+                {files.map((f, i) => (
+                  <div key={i} className="relative">
+                    <img
+                      src={URL.createObjectURL(f)}
+                      className="w-20 h-20 rounded-xl object-cover border border-cherry-100"
+                      alt=""
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-600 text-white text-sm leading-none shadow hover:bg-red-700"
+                      title="Yangi rasmni olib tashlash"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-2 pt-1">
           <Btn type="button" variant="outline" onClick={onClose} className="flex-1">Bekor</Btn>
