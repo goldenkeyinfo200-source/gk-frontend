@@ -50,11 +50,15 @@ export default function PropertyDetail() {
   const handleRepost = async () => {
     setPosting(true)
     try {
-      await propertiesApi.update(id, { post_status: 'pending' })
-      toast.success('Post Telegram ga yuborildi!')
+      const { data } = await propertiesApi.repost(id)
+      if (data.success) {
+        toast.success('Post Telegram ga yuborildi!')
+      } else {
+        toast.error("Post yuborilmadi — rasm yo'q yoki xato yuz berdi")
+      }
       load()
-    } catch {
-      toast.error('Xato yuz berdi')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Xato yuz berdi')
     } finally {
       setPosting(false)
     }

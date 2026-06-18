@@ -57,6 +57,7 @@ export const propertiesApi = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   matches: (id) => api.get(`/api/properties/${id}/matches`),
+  repost: (id) => api.post(`/api/properties/${id}/repost`),
 }
 
 export const leadsApi = {
