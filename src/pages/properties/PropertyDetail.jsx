@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, MapPin, Phone, Users, Edit3,
   ChevronLeft, ChevronRight, Sparkles, Lock, Send,
-  RefreshCw, Heart
+  RefreshCw, Heart, X, ImagePlus, Image as ImageIcon
 } from 'lucide-react'
 import { propertiesApi } from '../../services/api'
 import useAuthStore from '../../store/authStore'
@@ -410,6 +410,13 @@ function EditPropertyModal({ open, property: p, onClose, onSaved }) {
   const [form, setForm] = useState({})
   const [loading, setLoading] = useState(false)
 
+  // Mavjud rasmlar (URL) va o'chirilganlar
+  const [existingPhotos, setExistingPhotos] = useState([])
+  const [deletedPhotos, setDeletedPhotos] = useState([])
+  // Yangi qo'shilayotgan rasmlar (File obyektlari)
+  const [newPhotos, setNewPhotos] = useState([])
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState([])
+
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
 
   useEffect(() => {
@@ -437,8 +444,49 @@ function EditPropertyModal({ open, property: p, onClose, onSaved }) {
         installment: p.installment || false,
         status: p.status || 'active',
       })
+
+      setExistingPhotos(Array.isArray(p.photos) ? p.photos : [])
+      setDeletedPhotos([])
+      setNewPhotos([])
+      setNewPhotoPreviews([])
     }
   }, [p, open])
+
+  // Mavjud rasmni o'chirishga belgilash
+  const removeExistingPhoto = (url) => {
+    setExistingPhotos(prev => prev.filter(u => u !== url))
+    setDeletedPhotos(prev => [...prev, url])
+  }
+
+  // Yangi rasm tanlash
+  const handleNewPhotos = (e) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    const totalCount = existingPhotos.length + newPhotos.length + files.length
+    if (totalCount > 10) {
+      toast.error("Jami 10 tadan ortiq rasm bo'lmasligi kerak")
+      return
+    }
+
+    setNewPhotos(prev => [...prev, ...files])
+
+    files.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        setNewPhotoPreviews(prev => [...prev, reader.result])
+      }
+      reader.readAsDataURL(file)
+    })
+
+    e.target.value = ''
+  }
+
+  // Yangi tanlangan rasmni bekor qilish
+  const removeNewPhoto = (idx) => {
+    setNewPhotos(prev => prev.filter((_, i) => i !== idx))
+    setNewPhotoPreviews(prev => prev.filter((_, i) => i !== idx))
+  }
 
   const submit = async (e) => {
     e.preventDefault()
@@ -450,13 +498,28 @@ function EditPropertyModal({ open, property: p, onClose, onSaved }) {
     setLoading(true)
 
     try {
-      await propertiesApi.update(p.id, {
+      const fd = new FormData()
+
+      const payload = {
         ...form,
         region:       form.city,
         landmark:     [form.street, form.landmark_note].filter(Boolean).join(' | '),
         address:      form.street + (form.house_number ? ', ' + form.house_number : ''),
         location_url: form.location_url || null,
+      }
+
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value === null || value === undefined) return
+        fd.append(key, typeof value === 'boolean' ? String(value) : value)
       })
+
+      // O'chirilgan mavjud rasmlar ro'yxati
+      fd.append('deletedPhotos', JSON.stringify(deletedPhotos))
+
+      // Yangi qo'shilayotgan rasm fayllari
+      newPhotos.forEach(file => fd.append('photos', file))
+
+      await propertiesApi.update(p.id, fd)
 
       toast.success("Obyekt yangilandi!")
       onSaved()
@@ -494,6 +557,62 @@ function EditPropertyModal({ open, property: p, onClose, onSaved }) {
         </div>
 
         <Input label="Narx ($) *" type="number" value={form.price || ''} onChange={e => set('price', e.target.value)} />
+
+        <div className="bg-cherry-50 rounded-xl p-3 space-y-3">
+          <p className="text-xs font-semibold text-cherry-700 flex items-center gap-1.5">
+            <ImageIcon size={13} /> Rasmlar ({existingPhotos.length + newPhotos.length}/10)
+          </p>
+
+          <div className="grid grid-cols-4 gap-2">
+            {/* Mavjud rasmlar */}
+            {existingPhotos.map((url, i) => (
+              <div key={`existing-${i}`} className="relative group aspect-square rounded-xl overflow-hidden border border-cherry-100">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeExistingPhoto(url)}
+                  className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-lg p-1 transition-all"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+
+            {/* Yangi tanlangan rasmlar (preview) */}
+            {newPhotoPreviews.map((src, i) => (
+              <div key={`new-${i}`} className="relative group aspect-square rounded-xl overflow-hidden border-2 border-green-300">
+                <img src={src} alt="" className="w-full h-full object-cover" />
+                <span className="absolute bottom-1 left-1 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">Yangi</span>
+                <button
+                  type="button"
+                  onClick={() => removeNewPhoto(i)}
+                  className="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white rounded-lg p-1 transition-all"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+
+            {/* Rasm qo'shish tugmasi */}
+            {(existingPhotos.length + newPhotos.length) < 10 && (
+              <label className="aspect-square rounded-xl border-2 border-dashed border-cherry-200 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-cherry-400 hover:bg-white transition-all">
+                <ImagePlus size={18} className="text-cherry-400" />
+                <span className="text-[10px] text-cherry-500">Qo'shish</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleNewPhotos}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          {existingPhotos.length === 0 && newPhotos.length === 0 && (
+            <p className="text-xs text-amber-600">⚠️ Rasm yo'q — Telegram kanalga post yuborilmaydi</p>
+          )}
+        </div>
 
         <div className="bg-cherry-50 rounded-xl p-3 space-y-3">
           <p className="text-xs font-semibold text-cherry-700 flex items-center gap-1.5">

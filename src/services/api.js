@@ -53,7 +53,9 @@ export const propertiesApi = {
   create: (data) => api.post('/api/properties', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  update: (id, data) => api.put(`/api/properties/${id}`, data),
+  update: (id, data) => api.put(`/api/properties/${id}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   matches: (id) => api.get(`/api/properties/${id}/matches`),
 }
 
