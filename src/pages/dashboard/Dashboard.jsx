@@ -36,9 +36,9 @@ function BannerSlider({ banners }) {
         </div>
         {b.link_url && (
           <a href={b.link_url} target="_blank" rel="noreferrer"
-            className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg"
+            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white"
             style={{ background: 'rgba(255,255,255,0.18)' }}>
-            <ExternalLink size={14} color="#fff" />
+            Batafsil <ExternalLink size={12} color="#fff" />
           </a>
         )}
       </div>
