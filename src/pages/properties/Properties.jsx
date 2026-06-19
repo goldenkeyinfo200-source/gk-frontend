@@ -419,7 +419,12 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
       const fd = new FormData()
 
       Object.entries(payload).forEach(([k, v]) => {
-        fd.append(k, v ?? '')
+        if (v === null || v === undefined) return
+        if (typeof v === 'boolean') {
+          fd.append(k, v ? 'true' : 'false')
+        } else {
+          fd.append(k, v)
+        }
       })
 
       if (isEdit) {
