@@ -19,6 +19,7 @@ const adminApi = {
   sendReport: () => api.post('/api/admin/report'),
   clientStats: () => api.get('/api/admin/client-stats'),
   setTelegramId: (id, telegram_id) => api.put(`/api/admin/agents/${id}/telegram`, { telegram_id }),
+  setChannel:    (id, channel)     => api.put(`/api/admin/agents/${id}/channel`, { channel }),
 
   banners: () => api.get('/api/banners/admin/all'),
   addBanner: (data) => api.post('/api/banners', data),
@@ -63,6 +64,7 @@ export default function AdminPanel() {
   const [addModal, setAddModal] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [telegramModal, setTelegramModal] = useState(null)
+  const [channelModal, setChannelModal] = useState(null)
   const [clientStats, setClientStats] = useState(null)
 
   const [banners, setBanners] = useState([])
@@ -551,6 +553,7 @@ export default function AdminPanel() {
               onToggle={() => handleToggle(a.id)}
               onPlan={() => setPlanModal(a)}
               onTelegram={() => setTelegramModal(a)}
+              onChannel={() => setChannelModal(a)}
             />
           ))}
         </div>
@@ -561,6 +564,13 @@ export default function AdminPanel() {
         agent={telegramModal}
         onClose={() => setTelegramModal(null)}
         onSaved={() => { setTelegramModal(null); load() }}
+      />
+
+      <ChannelModal
+        open={!!channelModal}
+        agent={channelModal}
+        onClose={() => setChannelModal(null)}
+        onSaved={() => { setChannelModal(null); load() }}
       />
 
       <PlanModal
@@ -579,7 +589,7 @@ export default function AdminPanel() {
   )
 }
 
-function AgentCard({ agent: a, onToggle, onPlan, onTelegram }) {
+function AgentCard({ agent: a, onToggle, onPlan, onTelegram, onChannel }) {
   const st = STATUS_COLORS[a.subscription_status] || STATUS_COLORS.expired
   const StatusIcon = st.icon
 
@@ -654,6 +664,10 @@ function AgentCard({ agent: a, onToggle, onPlan, onTelegram }) {
             <Crown size={13} /> Tarif
           </Btn>
 
+          <Btn variant="outline" size="sm" onClick={onChannel}>
+            📢 Kanal
+          </Btn>
+
           <Btn variant={a.is_active ? 'outline' : 'primary'} size="sm" onClick={onToggle}>
             {a.is_active
               ? <><XCircle size={13} /> O'chirish</>
@@ -663,6 +677,49 @@ function AgentCard({ agent: a, onToggle, onPlan, onTelegram }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function ChannelModal({ open, agent, onClose, onSaved }) {
+  const [channel, setChannel] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (agent) setChannel(agent.channel || '')
+  }, [agent])
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      await adminApi.setChannel(agent.id, channel.trim())
+      toast.success('Kanal saqlandi!')
+      onSaved()
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Xato')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!agent) return null
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Kanal — ${agent.full_name || agent.login}`} size="sm">
+      <form onSubmit={submit} className="space-y-4">
+        <Input
+          label="Telegram kanal username"
+          value={channel}
+          onChange={e => setChannel(e.target.value)}
+          placeholder="@agent_kanal"
+        />
+        <p className="text-xs text-gray-400">Bot kanalga admin bo'lishi kerak</p>
+        <div className="flex gap-2">
+          <Btn type="button" variant="outline" onClick={onClose} className="flex-1">Bekor</Btn>
+          <Btn type="submit" loading={loading} className="flex-1">Saqlash</Btn>
+        </div>
+      </form>
+    </Modal>
   )
 }
 
