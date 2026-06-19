@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search, Building2, MapPin, Users, Send, Edit3, X } from 'lucide-react'
-import toast from 'react-hot-toast'
 import { propertiesApi } from '../../services/api'
 import { Btn, Empty, Spinner, Badge, Modal, Input, Select, Toggle } from '../../components/ui'
 import { fmt, TYPE_UZ, PURPOSE_UZ, CITIES } from '../../utils/helpers'
