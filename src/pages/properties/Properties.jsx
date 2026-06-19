@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Search, Building2, MapPin, Users, Send, Edit3, X } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { propertiesApi } from '../../services/api'
 import { Btn, Empty, Spinner, Badge, Modal, Input, Select, Toggle } from '../../components/ui'
 import { fmt, TYPE_UZ, PURPOSE_UZ, CITIES } from '../../utils/helpers'
@@ -494,7 +495,35 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
           </div>
 
           <Input label="Mo'ljal" value={form.landmark_note} onChange={e => set('landmark_note', e.target.value)} />
-          <Input label="Lokatsiya" value={form.location_url} onChange={e => set('location_url', e.target.value)} />
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1.5 block">Lokatsiya</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={form.location_url || ''}
+                onChange={e => set('location_url', e.target.value)}
+                placeholder="https://maps.google.com/..."
+                className="flex-1 bg-white border border-cherry-100 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-cherry-400 focus:ring-2 focus:ring-cherry-100 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      pos => {
+                        const url = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`
+                        set('location_url', url)
+                      },
+                      () => toast.error("Lokatsiya ruxsat berilmadi")
+                    )
+                  }
+                }}
+                className="px-3 py-2 bg-cherry-50 border border-cherry-100 rounded-xl text-cherry-700 hover:bg-cherry-100 transition-all text-sm"
+              >
+                📍
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
