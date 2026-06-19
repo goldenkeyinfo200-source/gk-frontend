@@ -625,6 +625,9 @@ function AgentCard({ agent: a, onToggle, onPlan, onTelegram }) {
               ? <span className="text-blue-500">✓ Telegram ulangan</span>
               : <button onClick={onTelegram} className="text-xs text-amber-500 hover:text-amber-700 underline transition-colors">⚠ Telegram yo'q — bog'lash</button>
             }
+            {a.channel && (
+              <span className="text-xs text-green-600">📢 {a.channel}</span>
+            )}
           </div>
 
           <div className="flex items-center gap-3 mt-2 flex-wrap">
@@ -732,6 +735,7 @@ function AddAgentModal({ open, onClose, onSaved }) {
     password: '',
     full_name: '',
     phone: '',
+    channel: '',
     plan: '',
     days: '30',
   })
@@ -748,7 +752,7 @@ function AddAgentModal({ open, onClose, onSaved }) {
     try {
       await adminApi.addAgent(form)
       toast.success("Agent qo'shildi!")
-      setForm({ login: '', password: '', full_name: '', phone: '', plan: '', days: '30' })
+      setForm({ login: '', password: '', full_name: '', phone: '', channel: '', plan: '', days: '30' })
       onSaved()
     } catch (err) {
       toast.error(err.response?.data?.error || 'Xato')
@@ -775,6 +779,13 @@ function AddAgentModal({ open, onClose, onSaved }) {
             placeholder="+998 90 123 45 67"
           />
         </div>
+
+        <Input
+          label="Telegram kanal (ixtiyoriy)"
+          value={form.channel}
+          onChange={e => set('channel', e.target.value)}
+          placeholder="@agent_kanal"
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <Input
