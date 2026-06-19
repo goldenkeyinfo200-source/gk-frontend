@@ -23,15 +23,15 @@ function BannerSlider({ banners }) {
   const b = banners[cur]
 
   return (
-    <div className="relative overflow-hidden rounded-2xl" style={{ background: b.color || '#8B1A2B' }}>
+    <div className="relative overflow-hidden rounded-2xl" style={{ background: b.color || '#8B1A2B', minHeight: '80px' }}>
       {b.image_url && (
         <img
           src={b.image_url}
           alt={b.company}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover object-center"
         />
       )}
-      <div className={`relative flex items-center gap-3 p-4 ${b.image_url ? 'bg-black/40' : ''}`}>
+      <div className="relative flex items-center gap-3 p-4" style={{ background: b.image_url ? 'rgba(0,0,0,0.45)' : 'transparent' }}>
         <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
           style={{ background: 'rgba(255,255,255,0.18)' }}>
           <Building2 size={20} color="#fff" />
