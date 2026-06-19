@@ -25,26 +25,27 @@ function BannerSlider({ banners }) {
   return (
     <div className="relative overflow-hidden rounded-2xl" style={{ background: b.color || '#8B1A2B', minHeight: '80px' }}>
       {b.image_url && (
-        <img
-          src={b.image_url}
-          alt={b.company}
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
+        <img src={b.image_url} alt={b.company} className="absolute inset-0 w-full h-full object-cover object-center" />
       )}
-      <div className="relative flex items-center gap-3 p-4" style={{ background: b.image_url ? 'rgba(0,0,0,0.45)' : 'transparent' }}>
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: 'rgba(255,255,255,0.18)' }}>
-          <Building2 size={20} color="#fff" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>Hamkor reklama</p>
-          <p className="text-sm font-semibold text-white truncate">{b.company}</p>
-          {b.slogan && <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>{b.slogan}</p>}
-        </div>
+      <div className="relative flex items-center gap-3 p-4">
+        {!b.image_url && (
+          <>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <Building2 size={20} color="#fff" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] uppercase tracking-wide mb-0.5" style={{ color: 'rgba(255,255,255,0.6)' }}>Hamkor reklama</p>
+              <p className="text-sm font-semibold text-white truncate">{b.company}</p>
+              {b.slogan && <p className="text-xs truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>{b.slogan}</p>}
+            </div>
+          </>
+        )}
+        {b.image_url && <div className="flex-1" />}
         {b.link_url && (
           <a href={b.link_url} target="_blank" rel="noreferrer"
             className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white"
-            style={{ background: 'rgba(255,255,255,0.18)' }}>
+            style={{ background: 'rgba(0,0,0,0.40)' }}>
             Batafsil <ExternalLink size={12} color="#fff" />
           </a>
         )}
