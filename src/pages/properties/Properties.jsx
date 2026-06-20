@@ -20,7 +20,7 @@ const FEATURES = {
 }
 
 const STREETS = {
-  "Qo'qon": [
+  "Qo'qon sh.": [
     "(A.Jallob) Tabasum",
     "(Abdulla Tuqay) Sariqo'rgon",
     "(Dostoevskiy) Oltin meros",
