@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, Building2, ArrowLeftRight, TrendingUp, CheckCircle, Clock, ChevronRight, Zap, ExternalLink } from 'lucide-react'
+import { Users, Building2, ArrowLeftRight, TrendingUp, CheckCircle, Clock, ChevronRight, Zap, ExternalLink, AlertTriangle, Crown } from 'lucide-react'
 import { clientsApi, propertiesApi, leadsApi } from '../../services/api'
 import api from '../../services/api'
 import useAuthStore from '../../store/authStore'
@@ -103,11 +103,64 @@ export default function Dashboard() {
   const recentClients    = clients.slice(0, 4)
   const recentProperties = properties.slice(0, 4)
 
+  // Obuna hisoblash
+  const subDaysLeft = (() => {
+    if (agent?.role === 'admin') return null
+    if (agent?.plan && agent?.plan_end) {
+      const d = Math.ceil((new Date(agent.plan_end) - new Date()) / 86400000)
+      return Math.max(0, d)
+    }
+    if (agent?.trial_end) {
+      const d = Math.ceil((new Date(agent.trial_end) - new Date()) / 86400000)
+      return Math.max(0, d)
+    }
+    return 0
+  })()
+  const subPlan = agent?.plan || 'trial'
+  const subExpired = subDaysLeft !== null && subDaysLeft <= 0
+
   return (
     <div className="space-y-6 max-w-5xl">
 
       {/* Banner slider */}
       {banners.length > 0 && <BannerSlider banners={banners} />}
+
+      {/* Obuna holati */}
+      {subDaysLeft !== null && (
+        subExpired ? (
+          <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
+            <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle size={18} className="text-red-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-700">Obuna muddati tugadi!</p>
+              <p className="text-xs text-red-500">Tizimdan to'liq foydalanish uchun admin bilan bog'laning.</p>
+            </div>
+          </div>
+        ) : subDaysLeft <= 3 ? (
+          <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle size={18} className="text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-700">Obuna yaqinda tugaydi!</p>
+              <p className="text-xs text-amber-600">Faqat <b>{subDaysLeft} kun</b> qoldi. Uzilishni oldini olish uchun to'lovni amalga oshiring.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-4 py-3">
+            <div className="w-9 h-9 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+              <Crown size={18} className="text-green-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-green-700 capitalize">
+                {subPlan === 'trial' ? 'Sinov davri' : subPlan === 'pro' ? 'Pro tarif' : 'Korporativ tarif'}
+              </p>
+              <p className="text-xs text-green-600"><b>{subDaysLeft} kun</b> qoldi</p>
+            </div>
+          </div>
+        )
+      )}
 
       {/* Greeting */}
       <div className="flex items-center justify-between">
