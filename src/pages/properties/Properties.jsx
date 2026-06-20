@@ -886,6 +886,76 @@ export default function Properties() {
   )
 }
 
+function StreetSearch({ streets, value, onChange }) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+
+  const filtered = query.length > 0
+    ? streets.filter(s => s.toLowerCase().includes(query.toLowerCase())).slice(0, 50)
+    : streets.slice(0, 50)
+
+  const handleSelect = (street) => {
+    onChange(street)
+    setQuery('')
+    setOpen(false)
+  }
+
+  const handleClear = () => {
+    onChange('')
+    setQuery('')
+    setOpen(false)
+  }
+
+  return (
+    <div className="space-y-1.5 relative">
+      <label className="text-xs font-medium text-gray-600">Ko'cha</label>
+      <div className="relative">
+        <input
+          type="text"
+          value={open ? query : value}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          placeholder={value || "Qidirish..."}
+          className="w-full bg-white border border-cherry-100 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-cherry-400 focus:ring-2 focus:ring-cherry-100 transition-all"
+        />
+        {value && !open && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => { setOpen(false); setQuery('') }} />
+          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-cherry-100 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+            {filtered.length === 0 ? (
+              <p className="text-xs text-gray-400 px-3.5 py-3">Topilmadi</p>
+            ) : (
+              filtered.map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => handleSelect(s)}
+                  className={clsx(
+                    'w-full text-left px-3.5 py-2 text-sm hover:bg-cherry-50 hover:text-cherry-700 transition-colors',
+                    value === s && 'bg-cherry-50 text-cherry-700 font-medium'
+                  )}
+                >
+                  {s}
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 function FeatureSelector({ selected, onChange }) {
   const toggle = feat => {
     const arr = selected.includes(feat)
@@ -1141,12 +1211,11 @@ function PropertyFormModal({ open, property, onClose, onSaved }) {
 
           <div className="grid grid-cols-2 gap-3">
             {cityStreets ? (
-              <Select label="Ko'cha" value={form.street} onChange={e => set('street', e.target.value)}>
-                <option value="">Tanlang</option>
-                {cityStreets.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </Select>
+              <StreetSearch
+                streets={cityStreets}
+                value={form.street}
+                onChange={v => set('street', v)}
+              />
             ) : (
               <Input label="Ko'cha" value={form.street} onChange={e => set('street', e.target.value)} />
             )}
