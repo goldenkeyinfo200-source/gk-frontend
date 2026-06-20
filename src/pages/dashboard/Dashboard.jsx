@@ -80,13 +80,21 @@ export default function Dashboard() {
       propertiesApi.list(),
       leadsApi.list(),
       api.get('/api/banners').catch(() => ({ data: [] })),
-    ]).then(([c, p, l, b]) => {
+      api.get('/api/auth/me').catch(() => ({ data: null })),
+    ]).then(([c, p, l, b, me]) => {
       setData({
         clients:    c.data,
         properties: p.data,
         leads:      l.data,
       })
       setBanners(b.data || [])
+      // Agent ma'lumotini yangilash (plan, plan_end, trial_end)
+      if (me.data) {
+        useAuthStore.getState().setAuth(
+          localStorage.getItem('gk_token'),
+          { ...useAuthStore.getState().agent, ...me.data }
+        )
+      }
     }).finally(() => setLoading(false))
   }, [])
 
