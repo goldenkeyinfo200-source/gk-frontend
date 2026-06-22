@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import {
   Users, AlertCircle, CheckCircle, XCircle, RefreshCw,
   Plus, Send, Shield, Phone, Zap, Crown, Gift, Trash2,
-  Pencil, Image as ImageIcon
+  Pencil, Image as ImageIcon, BarChart2
 } from 'lucide-react'
 import api from '../../services/api'
 import { Btn, Badge, Modal, Input, Select, Spinner, StatCard } from '../../components/ui'
 import { fmtDate } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
+import BannerStatsModal from '../../components/BannerStatsModal'
 
 const adminApi = {
   agents: () => api.get('/api/admin/agents'),
@@ -71,6 +72,7 @@ export default function AdminPanel() {
   const [bannerForm, setBannerForm] = useState(emptyBannerForm)
   const [editingBanner, setEditingBanner] = useState(null)
   const [uploadingBanner, setUploadingBanner] = useState(false)
+  const [statsModal, setStatsModal] = useState(null)
 
   const load = async () => {
     setLoading(true)
@@ -472,11 +474,26 @@ export default function AdminPanel() {
                     <p className="text-sm font-medium text-gray-900">{b.company}</p>
                     {b.slogan && <p className="text-xs text-gray-400">{b.slogan}</p>}
 
-                    <p className="text-[11px] text-gray-400 mt-1">
-                      {b.start_date ? `Boshlanish: ${fmtDate(b.start_date)} · ` : ''}
-                      {b.end_date ? `Tugash: ${fmtDate(b.end_date)}` : 'Muddat belgilanmagan'}
-                    </p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <p className="text-[11px] text-gray-400">
+                        {b.start_date ? `Boshlanish: ${fmtDate(b.start_date)} · ` : ''}
+                        {b.end_date ? `Tugash: ${fmtDate(b.end_date)}` : 'Muddat belgilanmagan'}
+                      </p>
+                      {/* Ko'rishlar soni */}
+                      <span className="text-[11px] text-amber-600 font-medium flex items-center gap-0.5">
+                        👁 {b.views_month ?? 0} oy
+                      </span>
+                    </div>
                   </div>
+
+                  {/* Statistika tugmasi */}
+                  <button
+                    onClick={() => setStatsModal(b)}
+                    className="text-amber-500 hover:text-amber-700 p-1"
+                    title="Statistika"
+                  >
+                    <BarChart2 size={14} />
+                  </button>
 
                   <button
                     onClick={async () => {
@@ -518,6 +535,14 @@ export default function AdminPanel() {
           </div>
         )}
       </div>
+
+      {/* Banner statistika modali */}
+      {statsModal && (
+        <BannerStatsModal
+          banner={statsModal}
+          onClose={() => setStatsModal(null)}
+        />
+      )}
 
       <div className="flex gap-1 bg-white border border-cherry-100 rounded-2xl p-1 flex-wrap">
         {[

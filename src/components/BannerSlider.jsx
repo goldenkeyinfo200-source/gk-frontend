@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 
-// Fallback — API bo'sh bo'lsa
 const FALLBACK_SLIDES = [
   {
-    id: 'f1',
+    id: null,
     company: 'GK Network',
     slogan: 'Qulay narxda uy toping',
     color: '#b91c1c',
@@ -13,11 +12,12 @@ const FALLBACK_SLIDES = [
   },
 ]
 
-export default function BannerSlider({ onAction }) {
+export default function BannerSlider({ onAction, userType = 'client' }) {
   const [slides, setSlides] = useState([])
   const [current, setCurrent] = useState(0)
   const timerRef = useRef(null)
   const touchStartX = useRef(null)
+  const viewedIds = useRef(new Set()) // bir sessiyada bir marta hisoblansin
 
   useEffect(() => {
     api.get('/api/banners')
@@ -32,17 +32,35 @@ export default function BannerSlider({ onAction }) {
 
   const total = slides.length
 
-  const goTo = (n) => setCurrent((n + total) % total)
+  // Ko'rishni qayd etish
+  const trackView = (slide) => {
+    if (!slide?.id || viewedIds.current.has(slide.id)) return
+    viewedIds.current.add(slide.id)
+    api.post(`/api/banners/${slide.id}/view`, { user_type: userType }).catch(() => {})
+  }
+
+  const goTo = (n) => {
+    const idx = (n + total) % total
+    setCurrent(idx)
+    trackView(slides[idx])
+  }
 
   const resetAuto = () => {
     clearInterval(timerRef.current)
     timerRef.current = setInterval(() => {
-      setCurrent(c => (c + 1) % (slides.length || 1))
+      setCurrent(c => {
+        const next = (c + 1) % (slides.length || 1)
+        trackView(slides[next])
+        return next
+      })
     }, 4500)
   }
 
   useEffect(() => {
-    if (total > 0) resetAuto()
+    if (total > 0) {
+      trackView(slides[0]) // birinchi slide ko'rildi
+      resetAuto()
+    }
     return () => clearInterval(timerRef.current)
   }, [total])
 
@@ -58,11 +76,8 @@ export default function BannerSlider({ onAction }) {
   }
 
   const handleClick = (slide) => {
-    if (slide.link_url) {
-      window.open(slide.link_url, '_blank')
-    } else if (onAction) {
-      onAction(slide)
-    }
+    if (slide.link_url) window.open(slide.link_url, '_blank')
+    else if (onAction) onAction(slide)
   }
 
   if (slides.length === 0) return null
@@ -76,9 +91,7 @@ export default function BannerSlider({ onAction }) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Slide */}
         {slide.image_url ? (
-          // Rasm bo'lsa — faqat rasm + pastda Batafsil tugmasi
           <div
             className="h-[130px] relative cursor-pointer"
             onClick={() => handleClick(slide)}
@@ -88,21 +101,23 @@ export default function BannerSlider({ onAction }) {
               alt={slide.company}
               className="w-full h-full object-cover"
             />
-            {/* Faqat link bo'lsa — Batafsil tugmasi pastda */}
             {slide.link_url && (
               <div className="absolute bottom-3 right-4">
-                <span className="bg-white/90 text-[11px] font-semibold px-3 py-1.5 rounded-lg shadow-sm"
-                  style={{ color: '#b91c1c' }}>
+                <span
+                  className="bg-white/90 text-[11px] font-semibold px-3 py-1.5 rounded-lg shadow-sm"
+                  style={{ color: '#b91c1c' }}
+                >
                   Batafsil →
                 </span>
               </div>
             )}
           </div>
         ) : (
-          // Rasm yo'q — rang fon bilan
           <div
             className="h-[130px] flex items-center justify-between px-5 relative overflow-hidden cursor-pointer"
-            style={{ background: `linear-gradient(135deg, ${slide.color || '#b91c1c'} 0%, ${darken(slide.color || '#b91c1c')} 100%)` }}
+            style={{
+              background: `linear-gradient(135deg, ${slide.color || '#b91c1c'} 0%, ${darken(slide.color || '#b91c1c')} 100%)`,
+            }}
             onClick={() => handleClick(slide)}
           >
             <div className="absolute right-[-10px] top-[-20px] w-[110px] h-[110px] rounded-full bg-white/[0.07] pointer-events-none" />
@@ -117,19 +132,18 @@ export default function BannerSlider({ onAction }) {
                 <p className="text-white/80 text-[12px] mb-2">{slide.slogan}</p>
               )}
               {slide.link_url && (
-                <span className="inline-block bg-white text-[11px] font-semibold px-3 py-1 rounded-lg" style={{ color: slide.color || '#b91c1c' }}>
+                <span
+                  className="inline-block bg-white text-[11px] font-semibold px-3 py-1 rounded-lg"
+                  style={{ color: slide.color || '#b91c1c' }}
+                >
                   Batafsil →
                 </span>
               )}
             </div>
-
-            <div className="relative z-10 text-[52px] opacity-20 flex-shrink-0 ml-2 pointer-events-none">
-              🏢
-            </div>
+            <div className="relative z-10 text-[52px] opacity-20 flex-shrink-0 ml-2 pointer-events-none">🏢</div>
           </div>
         )}
 
-        {/* Arrows — faqat 1 dan ko'p slide bo'lsa */}
         {total > 1 && (
           <>
             <button
@@ -146,7 +160,6 @@ export default function BannerSlider({ onAction }) {
         )}
       </div>
 
-      {/* Dots — faqat 1 dan ko'p slide bo'lsa */}
       {total > 1 && (
         <div className="flex justify-center items-center gap-1.5 mt-2.5">
           {slides.map((_, i) => (
@@ -165,7 +178,6 @@ export default function BannerSlider({ onAction }) {
   )
 }
 
-// Rangni biroz to'qlashtirish (gradient uchun)
 function darken(hex) {
   try {
     const n = parseInt(hex.replace('#', ''), 16)
@@ -173,7 +185,5 @@ function darken(hex) {
     const g = Math.max(0, ((n >> 8) & 0xff) - 30)
     const b = Math.max(0, (n & 0xff) - 30)
     return `#${[r, g, b].map(x => x.toString(16).padStart(2, '0')).join('')}`
-  } catch {
-    return hex
-  }
+  } catch { return hex }
 }
