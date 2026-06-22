@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, TrendingUp, Eye, Calendar } from 'lucide-react'
-import api from '../../services/api'
+import api from '../services/api'
 
 export default function BannerStatsModal({ banner, onClose }) {
   const [period, setPeriod] = useState(30)
