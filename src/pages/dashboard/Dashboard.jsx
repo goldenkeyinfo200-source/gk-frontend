@@ -7,14 +7,22 @@ import useAuthStore from '../../store/authStore'
 import { StatCard, Spinner } from '../../components/ui'
 import { fmt, fmtTime, TYPE_UZ, PURPOSE_UZ, STATUS_UZ } from '../../utils/helpers'
 
-function BannerSlider({ banners }) {
+function BannerSlider({ banners, onView }) {
   const [cur, setCur] = useState(0)
   const timerRef = useRef(null)
 
   useEffect(() => {
+    if (banners.length > 0) onView?.(banners[0])
+  }, [banners])
+
+  useEffect(() => {
     if (banners.length <= 1) return
     timerRef.current = setInterval(() => {
-      setCur(c => (c + 1) % banners.length)
+      setCur(c => {
+        const next = (c + 1) % banners.length
+        onView?.(banners[next])
+        return next
+      })
     }, 4000)
     return () => clearInterval(timerRef.current)
   }, [banners.length])
@@ -53,7 +61,7 @@ function BannerSlider({ banners }) {
       {banners.length > 1 && (
         <div className="flex justify-center gap-1 pb-2.5">
           {banners.map((_, i) => (
-            <button key={i} onClick={() => setCur(i)}
+            <button key={i} onClick={() => { setCur(i); onView?.(banners[i]) }}
               className="rounded-full transition-all"
               style={{
                 height: '4px',
@@ -73,6 +81,13 @@ export default function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [banners, setBanners] = useState([])
+  const viewedIds = useRef(new Set())
+
+  const trackView = (b) => {
+    if (!b?.id || viewedIds.current.has(b.id)) return
+    viewedIds.current.add(b.id)
+    api.post(`/api/banners/${b.id}/view`, { user_type: 'agent' }).catch(() => {})
+  }
 
   useEffect(() => {
     Promise.all([
@@ -130,8 +145,12 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 max-w-5xl">
 
-      {/* Banner slider */}
-      {banners.length > 0 && <BannerSlider banners={banners} />}
+      {/* Banner slider — sticky */}
+      {banners.length > 0 && (
+        <div className="sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 bg-white pb-2 pt-1">
+          <BannerSlider banners={banners} onView={trackView} />
+        </div>
+      )}
 
       {/* Obuna holati */}
       {subDaysLeft !== null && (
