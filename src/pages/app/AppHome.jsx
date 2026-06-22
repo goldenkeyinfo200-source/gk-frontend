@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, SlidersHorizontal, X, Building2 } from 'lucide-react'
 import { appFetch } from './ClientApp'
 import clsx from 'clsx'
+import BannerSlider from '../../components/BannerSlider'
 
 const TYPE_UZ = {
   apartment: 'Kvartira', house: 'Uy / Hovli',
@@ -63,10 +64,26 @@ export default function AppHome() {
 
   useEffect(() => { load(1) }, [load])
 
+  // Banner tugmasi bosilganda filter qo'yish
+  const handleBannerAction = (action) => {
+    if (action === 'ipoteka') {
+      setF('mortgage', true)
+    } else if (action === 'ijara') {
+      setF('purpose', 'rent')
+    } else if (action === 'obyektlar') {
+      setF('purpose', 'sell')
+    }
+    // 'konsultatsiya' uchun kerak bo'lsa navigate qo'shing
+  }
+
   const fmt = (n) => n ? `$${Number(n).toLocaleString('en-US')}` : ''
 
   return (
     <div className="max-w-lg mx-auto">
+
+      {/* ── Reklama banner slayder ── */}
+      <BannerSlider onAction={handleBannerAction} />
+
       {/* Header */}
       <div className="sticky top-0 bg-[#f8f5f5] z-10 px-4 pt-4 pb-2 space-y-3">
         <div className="flex items-center gap-2">
