@@ -78,7 +78,7 @@ export default function BannerSlider({ onAction }) {
       >
         {/* Slide */}
         {slide.image_url ? (
-          // Rasm bo'lsa — rasm ko'rsatiladi
+          // Rasm bo'lsa — faqat rasm + pastda Batafsil tugmasi
           <div
             className="h-[130px] relative cursor-pointer"
             onClick={() => handleClick(slide)}
@@ -88,15 +88,15 @@ export default function BannerSlider({ onAction }) {
               alt={slide.company}
               className="w-full h-full object-cover"
             />
-            {/* Ustiga gradient overlay va matn */}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-center px-5">
-              <div>
-                <p className="text-white font-bold text-[15px] leading-snug">{slide.company}</p>
-                {slide.slogan && (
-                  <p className="text-white/85 text-[12px] mt-0.5">{slide.slogan}</p>
-                )}
+            {/* Faqat link bo'lsa — Batafsil tugmasi pastda */}
+            {slide.link_url && (
+              <div className="absolute bottom-3 right-4">
+                <span className="bg-white/90 text-[11px] font-semibold px-3 py-1.5 rounded-lg shadow-sm"
+                  style={{ color: '#b91c1c' }}>
+                  Batafsil →
+                </span>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           // Rasm yo'q — rang fon bilan
