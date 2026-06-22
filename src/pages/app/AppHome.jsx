@@ -81,11 +81,14 @@ export default function AppHome() {
   return (
     <div className="max-w-lg mx-auto">
 
-      {/* ── Reklama banner slayder ── */}
-      <BannerSlider onAction={handleBannerAction} />
+      {/* ── Sticky: banner + filter ── */}
+      <div className="sticky top-0 z-20 bg-[#f8f5f5]">
 
-      {/* Header */}
-      <div className="sticky top-0 bg-[#f8f5f5] z-10 px-4 pt-4 pb-2 space-y-3">
+        {/* Reklama banner slayder */}
+        <BannerSlider onAction={handleBannerAction} />
+
+        {/* Header */}
+        <div className="px-4 pt-2 pb-2 space-y-3">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -196,6 +199,7 @@ export default function AppHome() {
             </button>
           </div>
         )}
+        </div>
       </div>
 
       {/* Results */}
